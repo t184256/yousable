@@ -1,0 +1,79 @@
+# default configuration values for yousable
+
+feed_defaults:
+  max_entries: 5  # consider only the last N videos
+  poll_seconds: 7200
+  sponsorblock_remove: []
+  profiles: [ default ]
+
+paths:
+  tmp: /tmp/yousable/tmp
+  out: /tmp/yousable/out
+  meta: /tmp/yousable/meta
+
+profiles:
+  default:
+    download: {}
+
+
+# also needs `feeds` to work, see config_example.yaml
+
+
+##########
+
+
+# use `authorization: ~` instead to disable the need to pass secrets
+#authorization:
+#  - user1: password1
+# TODO: implement ^
+
+#profiles:
+#  - FullHD:
+#      combined: [ '-S', 'height~1080' ]
+#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~1080' ]
+#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
+#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+#  - small:
+#      combined: [ '-S', 'height~540' ]
+#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~540' ]
+#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
+#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+#  - Opus:
+#      only_audio: [ '-f', 'ba', '-x', 'opus' ]
+# TODO: implement ^
+
+#
+#yt-dlp:
+#  extra_arguments: []
+
+#  path_storage: /tmp/yousable
+#  #path_completed_regular: /tmp/yousable/completed/regular
+#  #path_completed_streams: /tmp/yousable/completed/streams
+#  #path_live_streams: /tmp/yousable/live
+
+#feeds:
+#  # /feed/BlenderStudio
+#  BlenderStudio:
+#    # example using a YouTube channel ID
+#    url: https://youtube.com/channel/UCz75RVbH8q2jdBJ4SnwuZZQ
+#
+#  # /feed/MasyanyaKuvaeva
+#  MasyanyaKuvaeva:
+#    # example using a YouTube /c/ custom url
+#    url: https://youtube.com/c/MasyanyaKuvaeva
+#
+#  # /feed/Weebl-Songs
+#  Weebl-Songs:
+#    # example using a YouTube playlist
+#    url: https://youtube.com/playlist?list=PL4F6FB1A731B89744
+#    # override some of the channel attributes
+#    overrides:
+#      title: Weebl's Songs
+#    max_entries: 10  # optional
+#
+#  # /feed/Kurzgesagt
+#  Kurzgesagt:
+#    # example using a YouTube user url
+#    url: https://www.youtube.com/user/Kurzgesagt
+#    # cut out every segment reported to Sponsorblock
+#    sponsorblock_remove: [ all ]

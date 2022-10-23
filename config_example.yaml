@@ -1,0 +1,115 @@
+# example configuration file for yousable
+
+#paths:
+#  meta: /tmp/yousable/meta
+#  out: /tmp/yousable/out
+#  tmp: /tmp/yousable/tmp
+
+
+feed_defaults:
+  load_entries: 1  # query only the last L videos from youtube
+  keep_entries: 20  # keep only the last K videos on disk
+  profiles: [ default ]
+
+feeds:
+# AdaDeranaNews: # random channel with frequent updates
+#   url: https://www.youtube.com/c/AdaDeranaNews
+#   poll_seconds: 60
+
+  BlenderStudio:
+    # example using a YouTube channel ID
+    url: https://youtube.com/channel/UCz75RVbH8q2jdBJ4SnwuZZQ
+    profiles: [ default, small ]
+
+  JG:
+    url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw
+    profiles: [ small ]
+
+  # /feed/Kurzgesagt
+  Kurzgesagt:
+    # example using a YouTube user url
+    url: https://www.youtube.com/user/Kurzgesagt
+    load_entries: 3
+    # cut out sponsor segments reported to Sponsorblock
+    sponsorblock_remove: [ sponsor ]
+
+  K:
+    # example using a YouTube user url
+    url: https://www.youtube.com/user/Kurzgesagt
+    load_entries: 1
+    # cut out sponsor segments reported to Sponsorblock
+    sponsorblock_remove: [ sponsor ]
+    profiles: [ small ]
+
+profiles:
+  default:
+    download:
+      format_sort: ['res:1080']
+    #stream_video: [ '-f', 'bv', '-S', 'vext:mkv,height~1080' ]
+    #stream_audio: [ '-f', 'ba', '-S', 'aext:mka' ]
+    #stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+  small:
+    download:
+      format_sort: ['res:540']
+#     #stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~540' ]
+#     #stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
+#     #stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+# #Opus:
+# #    only_audio: [ '-f', 'ba', '-x', 'opus' ]
+
+
+#  # /feed/MasyanyaKuvaeva
+#  MasyanyaKuvaeva:
+#    # example using a YouTube /c/ custom url
+#    url: https://youtube.com/c/MasyanyaKuvaeva
+#    poll_seconds: 1
+
+#  # /feed/Weebl-Songs
+#  Weebl-Songs:
+#    # example using a YouTube playlist
+#    url: https://youtube.com/playlist?list=PL4F6FB1A731B89744
+#    # override some of the channel attributes
+#    overrides:
+#      title: Weebl's Songs
+#    max_entries: 10  # optional
+
+#  # /feed/Kurzgesagt
+#  Kurzgesagt:
+#    # example using a YouTube user url
+#    url: https://www.youtube.com/user/Kurzgesagt
+#    # cut out every segment reported to Sponsorblock
+#    sponsorblock_remove: [ all ]
+
+
+#########
+
+# use `authorization: ~` instead to disable the need to pass secrets
+#authorization:
+#  - user1: password1
+# TODO: implement ^
+
+#profiles:
+#  - FullHD:
+#      combined: [ '-S', 'height~1080' ]
+#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~1080' ]
+#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
+#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+#  - small:
+#      combined: [ '-S', 'height~540' ]
+#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~540' ]
+#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
+#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+#  - Opus:
+#      only_audio: [ '-f', 'ba', '-x', 'opus' ]
+# TODO: implement ^
+
+#yt-dlp:
+#  extra_arguments: []
+
+#feed_defaults:
+  #max_entries: 5  # consider only the last N videos
+  #path_storage: /tmp/yousable
+  #path_completed_regular: /tmp/yousable/completed/regular
+  #path_completed_streams: /tmp/yousable/completed/streams
+  #path_live_streams: /tmp/yousable/live
+
