@@ -70,8 +70,17 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
         ts = datetime.datetime.utcfromtimestamp(e['release_timestamp'])
         ts = pytz.utc.fromutc(ts)
     else:
-        ts = os.stat(entry_pathogen('meta', 'first_seen')).st_mtime
-        ts = pytz.utc.localize(datetime.datetime.utcfromtimestamp(ts))
+        fsts = os.stat(entry_pathogen('meta', 'first_seen')).st_mtime
+        fsts = pytz.utc.localize(datetime.datetime.utcfromtimestamp(fsts))
+        if 'upload_date' in e and e['upload_date']:
+            udts = datetime.datetime.strptime(e['upload_date'], '%Y%m%d')
+            udts = pytz.utc.fromutc(udts)
+            if udts <= fsts <= udts + datetime.timedelta(days=1):
+                ts = fsts  # first_seen is near upload_date and more precise
+            else:
+                ts = udts  # first_seen is wildly off and not helping
+        else:
+            ts = fsts  # nothing better to return
     fe.pubDate(ts)
 
     media_file = entry_pathogen('out', f'{profile}.{container}')
