@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib
 
 import flask
 from flask_httpauth import HTTPBasicAuth
@@ -117,7 +118,8 @@ def create_app(config=None):
             response.headers['Content-Disposition'] = \
                     f'attachment; filename={name}'
             response.headers['Content-Length'] = os.path.getsize(file_path)
-            response.headers['X-Accel-Redirect'] = server_path
+            response.headers['X-Accel-Redirect'] = \
+                    urllib.parse.quote(server_path)
             return response
         else:
             return flask.send_file(file_path, mimetype=mime,
