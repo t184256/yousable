@@ -15,12 +15,18 @@ def load_config():
     SPONSORBLOCKS = confuse.Sequence(confuse.Choice(
         list(yousable.sponsorblock.CATEGORIES)
     ))
+    CONTAINER_CHOICES = (
+        'avi', 'flv', 'mkv', 'mov', 'mp4', 'webm', 'aac', 'aiff', 'alac',
+        'flac', 'm4a', 'mka', 'mp3', 'ogg', 'opus', 'vorbis', 'wav'
+    )
     CONFIG_FEED_DEFAULTS = {
         'load_entries': int,
         'keep_entries': int,
+        'keep_entries_seconds': int,
         'poll_seconds': int,
         'profiles': confuse.Sequence(str),
         'sponsorblock_remove': confuse.Sequence(confuse.Choice(SPONSORBLOCKS)),
+        'live_slice_seconds': int,
     }
 
     config = confuse.Configuration('yousable', __name__)
@@ -35,8 +41,11 @@ def load_config():
 
     config_template_feed = {
         'url': str,
+        'live_url': confuse.Optional(str),
         'load_entries': confuse.Optional(feed_defaults['load_entries']),
         'keep_entries': confuse.Optional(feed_defaults['keep_entries']),
+        'keep_entries_seconds': \
+                confuse.Optional(feed_defaults['keep_entries_seconds']),
         'poll_seconds': confuse.Optional(feed_defaults['poll_seconds']),
         'profiles': \
                 confuse.Optional(confuse.Sequence(profile_names),
@@ -44,16 +53,25 @@ def load_config():
         'sponsorblock_remove': \
                 confuse.Optional(SPONSORBLOCKS,
                                  default=feed_defaults['sponsorblock_remove']),
+        'overrides': confuse.Optional(dict),
+        'live_slice_seconds': \
+                confuse.Optional(feed_defaults['live_slice_seconds']),
     }
 
     config_template = {
+        'secrets': confuse.OneOf([None, confuse.MappingValues(str)]),
         'paths': {
             'tmp': confuse.Filename(),
             'out': confuse.Filename(),
+            'live': confuse.Optional(confuse.Filename()),
             'meta': confuse.Filename(),
+            'x_accel': confuse.Optional(confuse.Filename()),
         },
         'profiles': confuse.MappingValues({
+            'container': confuse.Choice(CONTAINER_CHOICES),
+            'video': confuse.Choice([True, False], default=True),
             'download': dict,
+            'live': confuse.Optional(dict),
         }),
         'feeds': confuse.MappingValues(config_template_feed),
     }
@@ -68,12 +86,13 @@ def load_config():
 def main():
     if len(sys.argv) == 2:
         subcommand = sys.argv[1]
-        config = load_config()
         if subcommand == 'back':
-            return yousable.back.main.main(config)
+            return yousable.back.main.main(load_config())
         elif subcommand == 'front':
-            return yousable.front.main.main(config)
-    print('Usage: yousable {back|front}', file=sys.stderr)
+            return yousable.front.main.main()
+        elif subcommand == 'hash':
+            print(yousable.front.main.hash_password(input('password> ')))
+    print('Usage: yousable {back|front|hash}', file=sys.stderr)
     if not os.getenv('YOUSABLE_CONFIG'):
         print('Config can be supplied with YOUSABLE_CONFIG variable.',
               file=sys.stderr)

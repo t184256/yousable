@@ -1,19 +1,29 @@
 # default configuration values for yousable
 
+secrets: ~
+
 feed_defaults:
-  max_entries: 5  # consider only the last N videos
-  poll_seconds: 7200
+  load_entries: 10             # query only the last L videos from youtube
+  keep_entries: 15             # keep at least the last K videos on disk
+  keep_entries_seconds: 86400  # keep videos that are less than M seconds old
+  live_slice_seconds: 600      # slice livestreams into files N seconds long
+  poll_seconds: 3600
   sponsorblock_remove: []
   profiles: [ default ]
 
 paths:
   tmp: /tmp/yousable/tmp
   out: /tmp/yousable/out
+  live:  # not used by default, livestreams would just be ignored
   meta: /tmp/yousable/meta
+  x_accel:  # not used by default, requires extra nginx configuration
 
 profiles:
   default:
+    video: True
+    container: mkv
     download: {}
+    live: {}
 
 
 # also needs `feeds` to work, see config_example.yaml

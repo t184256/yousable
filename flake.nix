@@ -14,21 +14,22 @@
           src = ./.;
           propagatedBuildInputs = with pkgs.python3Packages; [
             flask
+            flask-httpauth
             yt-dlp
             feedgen
             confuse
-            cachetools
             requests
             fasteners
             mutagen
-            ffmpeg
+            ffmpeg-python
           ] ++ (with pkgs; [
             ffmpeg
-          ]);
+          ]
+          );
           doCheck = false;
         };
         waitressEnv = pkgs.python3.withPackages (p: with p; [
-          waitress yousable.front
+          waitress yousable
         ]);
         app = flake-utils.lib.mkApp { drv = yousable; };
       in
@@ -56,6 +57,7 @@
             configFile = lib.mkOption {
               description = "Configuration file to use.";
               type = lib.types.str;
+              default = "/etc/yousable/config.yaml";
             };
             address = lib.mkOption {
               description = "Address to listen to";
@@ -70,22 +72,38 @@
           };
           config = lib.mkIf cfg.enable {
             users = {
+              users.yousable.home = "/tmp/yousable";  # TODO: /var/lib?
+              users.yousable.createHome = true;
               users.yousable.isSystemUser = true;
               users.yousable.group = "yousable";
               groups.yousable = {};
             };
-            systemd.services.yousable = {
-              path = [ pkgs.yt-dlp-light ];  # move to wrapper?
-              description = "Podcast generator based on yt-dlp";
+            systemd.services.yousable-back = {
+              path = [ pkgs.yt-dlp pkgs.ffmpeg ];
+              description = "Podcast generator based on yt-dlp: downloader";
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
-              environment.PODCASTIFY_CONFIG = cfg.configFile;
+              environment.YOUSABLE_CONFIG = cfg.configFile;
+              serviceConfig = {
+                WorkingDirectory = "/tmp/yousable";
+                ExecStart =
+                  "${self.packages.${system}.yousable}/bin/yousable back";
+                Restart = "on-failure";
+                User = "yousable";
+                Group = "yousable";
+              };
+            };
+            systemd.services.yousable-front = {
+              description = "Podcast generator based on yt-dlp: frontend";
+              wantedBy = [ "multi-user.target" ];
+              after = [ "network.target" ];
+              environment.YOUSABLE_CONFIG = cfg.configFile;
               serviceConfig = {
                 ExecStart = lib.escapeShellArgs [
                   "${self.packages.${system}.waitressEnv}/bin/waitress-serve"
-                  "--threads" "16"
+                  "--threads" "12"
                   "--listen" "${cfg.address}:${builtins.toString cfg.port}"
-                  "yousable.main:app"
+                  "--call" "yousable.front.main:create_app"
                 ];
                 Restart = "on-failure";
                 User = "yousable";

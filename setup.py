@@ -9,18 +9,21 @@ setup(
     url='https://github.com/t184256/yousable',
     author='Alexander Sosedkin',
     author_email='monk@unboiled.info',
-    description="automated downloader / podcast feed generator based on yt-dlp"
+    description="youtube downloader / podcast feed generator based on yt-dlp",
     packages=[
         'yousable',
+        'yousable.back',
+        'yousable.front',
     ],
     install_requires=[
         'flask',
         'feedgen',
-        'ruamel-yaml',
-        'cachetools',
         'requests',
+        'confuse',
+        'fasteners',
+        'mutagen',
+        'ffmpeg-python',
     ],
-    #scripts=['yousable/__main__.py'],
     entry_points={
         'console_scripts': [
             'yousable = yousable.main:main',

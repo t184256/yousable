@@ -5,19 +5,20 @@ pkgs.mkShell {
     ffmpeg
     (python3.withPackages (ps: with ps; [
       flask
+      flask-httpauth
       feedgen
-      cachetools
       confuse
       requests
       fasteners
       mutagen
-      ffmpeg
+      ffmpeg-python
     ]))
   ];
-  nativeBuildInputs = with pkgs.python3Packages; [
+  nativeBuildInputs = (with pkgs.python3Packages; [
     coverage
     flake8
     flake8-import-order
+  ]) ++ (with pkgs; [
     codespell
-  ];
+  ]);
 }
