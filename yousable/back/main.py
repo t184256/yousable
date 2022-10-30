@@ -152,15 +152,17 @@ def cleanup(config, feed, feed_pathogen):
         for path in [feed_pathogen(d, i) for d in ('meta', 'tmp', 'out')]:
             _remove_dir(feed, i, path)
         if config['paths']['live']:
-            g = os.path.join(config['paths']['live'], f'* {feed} - {i} *')
-            for p in glob.glob(g):
+            for p in glob.glob(os.path.join(config['paths']['live'], '*',
+                                            feed, f'*.{i[:4]}.*')):
                 os.unlink(p)
                 print(f'{feed} {i}: removed live {p}', file=sys.stderr)
     return id_ts
 
 
 def main(config):
-    monitors = [_start_process(monitor, config, feed)
-                for feed in config['feeds']]
+    monitors = []
+    for feed in config['feeds']:
+        monitors.append(_start_process(monitor, config, feed))
+        time.sleep(random.random() * 10)
     for p in monitors:
         p.join()

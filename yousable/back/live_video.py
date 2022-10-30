@@ -150,14 +150,14 @@ def live_video(config, feed, entry_pathogen, profile):
         entry_info = json.load(f)
 
     container = config['profiles'][profile]['container']
-    audio_only = not config['profiles'][profile]['video']
+    assert config['profiles'][profile]['video']
 
     pretty_log_name = f'{profile} {entry_info["id"]} {entry_info["title"]}'
     if len(pretty_log_name) > 30:
         pretty_log_name = pretty_log_name[:27] + '...'
 
-    fname = (f'{entry_info["upload_date"]} - '
-             f'{feed} - {entry_info["id"]} - {profile}')
+    fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}.{profile}'
+    dir_ = os.path.join(config['paths']['live'], profile, feed)
 
     fnames = set()
     dl_opts = {
@@ -169,7 +169,7 @@ def live_video(config, feed, entry_pathogen, profile):
         'progress_hooks': [make_progress_hook(
             pretty_log_name,
             entry_pathogen('tmp', profile),
-            os.path.join(config['paths']['live'], fname),
+            os.path.join(dir_, fname),
             container,
             config['feeds'][feed]['live_slice_seconds'],
             fnames
@@ -184,7 +184,7 @@ def live_video(config, feed, entry_pathogen, profile):
         'allow_unplayable_formats': True  # should prevent final yt-dlp merging
     }
 
-    os.makedirs(config['paths']['live'], exist_ok=True)
+    os.makedirs(dir_, exist_ok=True)
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
     while True:
@@ -199,6 +199,7 @@ def live_video(config, feed, entry_pathogen, profile):
             except DownloadStuckError as ex:
                 print('>>>', 'STUCK', file=sys.stderr)
             print('>>>', 'DEAD', file=sys.stderr)
+            sys.stderr.flush()
             os._exit(1)
         for x in glob.glob(entry_pathogen('tmp', profile, '*-Frag*')):
             os.unlink(x)
@@ -214,8 +215,7 @@ def live_video(config, feed, entry_pathogen, profile):
             continue
 
     inputs = [entry_pathogen('tmp', profile, x) for x in fnames]
-    slice_and_merge_final(inputs,
-                          entry_pathogen('live', profile, fname), container,
+    slice_and_merge_final(inputs, os.path.join(dir_, fname), container,
                           config['feeds'][feed]['live_slice_seconds'])
 
     #shutil.rmtree(entry_pathogen('tmp', profile))

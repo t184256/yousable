@@ -124,8 +124,8 @@ def live_audio(config, feed, entry_pathogen, profile):
     if len(pretty_log_name) > 30:
         pretty_log_name = pretty_log_name[:27] + '...'
 
-    fname = (f'{entry_info["upload_date"]} - '
-             f'{feed} - {entry_info["id"]} - {profile}')
+    fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}.{profile}'
+    dir_ = os.path.join(config['paths']['live'], profile, feed)
 
     fnames = set()
     dl_opts = {
@@ -137,7 +137,7 @@ def live_audio(config, feed, entry_pathogen, profile):
         'progress_hooks': [make_progress_hook(
             pretty_log_name,
             entry_pathogen('tmp', profile),
-            os.path.join(config['paths']['live'], fname),
+            os.path.join(dir_, fname),
             container,
             config['feeds'][feed]['live_slice_seconds'],
             fnames
@@ -152,7 +152,7 @@ def live_audio(config, feed, entry_pathogen, profile):
         'allow_unplayable_formats': True  # should prevent final yt-dlp merging
     }
 
-    os.makedirs(config['paths']['live'], exist_ok=True)
+    os.makedirs(dir_, exist_ok=True)
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
     while True:
@@ -165,8 +165,10 @@ def live_audio(config, feed, entry_pathogen, profile):
                     if r == 0:
                         os._exit(0)
             except Exception as ex:
-                print('>>>', 'DEAD', ex, file=sys.stderr)
+                print('>>>', 'CAUGHT', type(ex), ex, file=sys.stderr)
                 raise
+            print('>>>', 'DEAD', file=sys.stderr)
+            sys.stderr.flush()
             os._exit(1)
         for x in glob.glob(entry_pathogen('tmp', profile, '*-Frag*')):
             os.unlink(x)
@@ -182,8 +184,7 @@ def live_audio(config, feed, entry_pathogen, profile):
             continue
 
     input_ = [entry_pathogen('tmp', profile, x) for x in fnames][0]
-    slice_final(input_,
-                entry_pathogen('live', profile, fname), container,
+    slice_final(input_, os.path.join(dir_, fname), container,
                 config['feeds'][feed]['live_slice_seconds'])
 
     #shutil.rmtree(entry_pathogen('tmp', profile))
