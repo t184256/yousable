@@ -5,6 +5,7 @@ import glob
 import json
 import multiprocessing
 import os
+import random
 import shutil
 import sys
 import time
@@ -109,11 +110,11 @@ def monitor(config, feed):
                             _start_process(download, config, feed,
                                            entry_pathogen, profile)
 
+        time.sleep(feed_cfg['poll_seconds'] * (1 - random.random() / 100))
+
         c = cleanup(config, feed, feed_pathogen)
         if c:
             print(f'{feed}: cleaned up {len(c)} items.')
-
-        time.sleep(feed_cfg['poll_seconds'])
 
 
 def _entry_ts(feed_pathogen, feed, entry_id):
@@ -164,6 +165,6 @@ def main(config):
     monitors = []
     for feed in config['feeds']:
         monitors.append(_start_process(monitor, config, feed))
-        time.sleep(random.random() * 10)
+        time.sleep(random.random() * 5)
     for p in monitors:
         p.join()
