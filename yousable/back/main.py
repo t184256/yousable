@@ -55,6 +55,9 @@ def monitor(config, feed):
         yt_dl_options = {
             'quiet': True,
             #'verbose': True,
+            'match_filter': yt_dlp.utils.match_filter_func(
+                'live_status != is_upcoming'
+            ),
             'playlist_items': f'{feed_cfg["load_entries"]}::-1'
         }
         print(f'{feed}: refreshing...')
@@ -93,9 +96,7 @@ def monitor(config, feed):
                 lg = f'{feed} {profile} {entry_info["id"]}'
                 if profile in config['feeds'][feed]['profiles']:
                     live_status = entry_info.get('live_status')
-                    if live_status == 'is_upcoming':
-                        pass
-                    elif live_status == 'is_live':
+                    if live_status == 'is_live':
                         if _live_enabled(lg, config, profile):
                             if config['profiles'][profile]['video']:
                                 _start_process(live_video, config, feed,
