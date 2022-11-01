@@ -75,13 +75,12 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
 
         i, l = d['fragment_index'], d['fragment_count']
         progress = (i, l)
-        fname_collector.add(d['filename'])
         segments_pretty_progress = f'{i}/{l}'
 
         if (i != last_reported_seg
                 or now > last_reported_time + target_interval):
             print(f'{log_prefix}: {written_duration}/{observed_duration}s'
-                  f' of {segments_pretty_progress} segments')
+                  f' of {segments_pretty_progress} segments', file=sys.stderr)
             last_reported_seg, last_reported_time = i, now
 
         if i < 2:
@@ -102,8 +101,11 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
             lock.release()
 
         print(f'{log_prefix}: {written_duration}/{observed_duration}s'
-              f' of {segments_pretty_progress} segments')
+              f' of {segments_pretty_progress} segments', file=sys.stderr)
         last_reported_seg, last_reported_time = i, now
+
+        if fname_collector.empty():
+            fname_collector.put(d['filename'])
 
     return progress_hook
 
@@ -127,7 +129,7 @@ def live_audio(config, feed, entry_pathogen, profile):
     fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}.{profile}'
     dir_ = os.path.join(config['paths']['live'], profile, feed)
 
-    fnames = set()
+    fname_collector = multiprocessing.Queue()
     dl_opts = {
         'quiet': True,
         #'verbose': True,
@@ -140,7 +142,7 @@ def live_audio(config, feed, entry_pathogen, profile):
             os.path.join(dir_, fname),
             container,
             config['feeds'][feed]['live_slice_seconds'],
-            fnames
+            fname_collector
         )],
         'outtmpl': 'media',
         'paths': {
@@ -177,13 +179,19 @@ def live_audio(config, feed, entry_pathogen, profile):
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        print('>>>', 'sleeping...', file=sys.stderr)
-        time.sleep(10)
-        print('>>>', 'restarting...', file=sys.stderr)
-        if p.exitcode:
-            continue
+        outmarker = entry_pathogen('tmp', profile, 'media')
+        print('>>>', f'{p.exitcode} {os.path.exists(outmarker)}',
+              file=sys.stderr)
+        if p.exitcode == 0 or os.path.exists(outmarker):
+            print('>>>', 'done! proceeding to final slicing', file=sys.stderr)
+            break
+        else:
+            print('>>>', 'sleeping...', file=sys.stderr)
+            time.sleep(10)
+            print('>>>', 'restarting...', file=sys.stderr)
 
-    input_ = [entry_pathogen('tmp', profile, x) for x in fnames][0]
+
+    input_ = entry_pathogen('tmp', profile, fname_collector.get())
     slice_final(input_, os.path.join(dir_, fname), container,
                 config['feeds'][feed]['live_slice_seconds'])
 

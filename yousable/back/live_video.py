@@ -55,7 +55,7 @@ def slice_and_merge_intermediate(infiles, outbasename, outext,
 
 
 def slice_and_merge_final(infiles, outbasename, outext, slice_duration):
-    total_duration = min(get_durations(inputs))
+    total_duration = min(get_durations(infiles))
     slice_and_merge_intermediate(infiles, outbasename, outext,
                                  total_duration, slice_duration)
     i = duration // slice_duration + 1
@@ -71,7 +71,7 @@ class DownloadStuckError(RuntimeError):
 
 def make_progress_hook(log_prefix, tmp_path, out_path, container,
                        slice_duration, fname_collector,
-                       target_interval=20, watchdog_stuck_max=50):
+                       target_interval=20, watchdog_stuck_max=100):
     lock = threading.Lock()
     seg_log, progresses, last_reported_segs, last_reported_time = [], {}, [], 0
     observed_duration = written_duration = 0
@@ -87,7 +87,6 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
 
         i, l = d['fragment_index'], d['fragment_count']
         progresses[d['filename']] = (i, l)
-        fname_collector.add(d['filename'])
         segments_pretty_progress = ' & '.join(f'{i}/{l}'
                                               for i, l in progresses.values())
         segs = [(i) for i, _ in progresses.values()]
@@ -109,7 +108,7 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
         if (segs != last_reported_segs
                 or now > last_reported_time + target_interval):
             print(f'{log_prefix}: {written_duration}/{observed_duration}s'
-                  f' of {segments_pretty_progress} segments')
+                  f' of {segments_pretty_progress} segments', file=sys.stderr)
             last_reported_segs, last_reported_time = segs, now
 
         if min_ < 2:
@@ -134,8 +133,11 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
             lock.release()
 
         print(f'{log_prefix}: {written_duration}/{observed_duration}s'
-              f' of {segments_pretty_progress} segments')
+              f' of {segments_pretty_progress} segments', file=sys.stderr)
         last_reported_segs, last_reported_time = segs, now
+
+        if fname_collector.empty():
+            fname_collector.put(set(progresses.keys()))
 
     return progress_hook
 
@@ -159,7 +161,7 @@ def live_video(config, feed, entry_pathogen, profile):
     fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}.{profile}'
     dir_ = os.path.join(config['paths']['live'], profile, feed)
 
-    fnames = set()
+    fname_collector = multiprocessing.Queue()
     dl_opts = {
         'quiet': True,
         #'verbose': True,
@@ -172,7 +174,7 @@ def live_video(config, feed, entry_pathogen, profile):
             os.path.join(dir_, fname),
             container,
             config['feeds'][feed]['live_slice_seconds'],
-            fnames
+            fname_collector
         )],
         'outtmpl': 'media',
         'paths': {
@@ -208,13 +210,18 @@ def live_video(config, feed, entry_pathogen, profile):
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        print('>>>', 'sleeping...', file=sys.stderr)
-        time.sleep(10)
-        print('>>>', 'restarting...', file=sys.stderr)
-        if p.exitcode:
-            continue
+        outmarker = entry_pathogen('tmp', profile, 'media')
+        print('>>>', f'{p.exitcode} {os.path.exists(outmarker)}',
+              file=sys.stderr)
+        if p.exitcode == 0 or os.path.exists(outmarker):
+            print('>>>', 'done! proceeding to final slicing', file=sys.stderr)
+            break
+        else:
+            print('>>>', 'sleeping...', file=sys.stderr)
+            time.sleep(10)
+            print('>>>', 'restarting...', file=sys.stderr)
 
-    inputs = [entry_pathogen('tmp', profile, x) for x in fnames]
+    inputs = [entry_pathogen('tmp', profile, x) for x in fname_collector.get()]
     slice_and_merge_final(inputs, os.path.join(dir_, fname), container,
                           config['feeds'][feed]['live_slice_seconds'])
 
