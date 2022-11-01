@@ -73,10 +73,12 @@ def monitor(config, feed):
         if feed_cfg['live_url']:
             print(f'{feed}: extra live check...')
             try:
-                with yt_dlp.YoutubeDL({'verbose': True}) as ydl:
+                with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                     le = ydl.extract_info(feed_cfg['live_url'], download=False)
                 le = ydl.sanitize_info(le)
-                if le and le['id'] not in info['entries']:
+                if le and 'entries' in le:
+                    info['entries'].extend(le['entries'])
+                elif le and le['id'] not in info['entries']:
                     info['entries'].append(le)
             except Exception as ex:
                 print(f'{feed}: ERROR {ex}', file=sys.stderr)
