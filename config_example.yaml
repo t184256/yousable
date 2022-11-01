@@ -1,115 +1,73 @@
 # example configuration file for yousable
 
-#paths:
-#  meta: /tmp/yousable/meta
-#  out: /tmp/yousable/out
-#  tmp: /tmp/yousable/tmp
+paths:
+  meta: /mnt/persist/cache/yousable/meta
+  out: /mnt/persist/cache/yousable/out
+  tmp: /mnt/persist/cache/yousable/tmp
+  live: /mnt/persist/cache/yousable/live
+  x_accel: /out
 
+secrets:
+  user1: pbkdf2:sha256:260000$T0zVMOiEkdPU3FtD$30994c8b02a3e818636c3148594ba61aa8fe2086dca6e3c16ced92fb74d166e7
+  # ^ `pass1` hashed, use `yousable hash` to generate one
 
 feed_defaults:
-  load_entries: 1  # query only the last L videos from youtube
-  keep_entries: 20  # keep only the last K videos on disk
+  load_entries: 5              # query only the last L videos from youtube
+  keep_entries: 10             # keep at least the last K videos on disk
+  keep_entries_seconds: 86400  # keep videos that are less than M seconds old
+  live_slice_seconds: 1200     # fill paths.live with fragments N seconds long
+  poll_seconds: 1200           # look for new videos roughly P seconds often
   profiles: [ default ]
 
 feeds:
-# AdaDeranaNews: # random channel with frequent updates
-#   url: https://www.youtube.com/c/AdaDeranaNews
-#   poll_seconds: 60
+  AdaDeranaNews:  # random channel with frequent updates, sometimes livestreams
+    url: https://www.youtube.com/c/AdaDeranaNews  # /c/ url
+    live_url: https://www.youtube.com/c/Hearthstone/live
+    poll_seconds: 600
 
-  BlenderStudio:
-    # example using a YouTube channel ID
-    url: https://youtube.com/channel/UCz75RVbH8q2jdBJ4SnwuZZQ
-    profiles: [ default, small ]
+# BlenderStudio:  # slowly updating channel, has subtitles
+#   url: https://youtube.com/channel/UCz75RVbH8q2jdBJ4SnwuZZQ  # /channel/ url
+#   profiles: [ default, small ]
 
-  JG:
-    url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw
-    profiles: [ small ]
+# HS:  # used as long livestream example in testing
+#   load_entries: 1
+#   keep_entries: 10
+#   url: https://www.youtube.com/c/Hearthstone
+#   live_url: https://www.youtube.com/c/Hearthstone/live
+#   profiles: [ small, audio ]
 
-  # /feed/Kurzgesagt
-  Kurzgesagt:
-    # example using a YouTube user url
-    url: https://www.youtube.com/user/Kurzgesagt
-    load_entries: 3
-    # cut out sponsor segments reported to Sponsorblock
-    sponsorblock_remove: [ sponsor ]
+# JG:  # has mostly streams
+#   url: https://www.youtube.com/playlist?list=UUWAIvx2yYLK_xTYD4F2mUNw
+#   live_url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw/live
+#   profiles: [ small, audio ]
+#   overrides:
+#     title: Живой Гвоздь  # change feed title
 
-  K:
-    # example using a YouTube user url
-    url: https://www.youtube.com/user/Kurzgesagt
-    load_entries: 1
-    # cut out sponsor segments reported to Sponsorblock
-    sponsorblock_remove: [ sponsor ]
-    profiles: [ small ]
+# Kurzgesagt:  # sponsorblock example
+#   url: https://www.youtube.com/user/Kurzgesagt  # /user/ url
+#   load_entries: 1
+#   # cut out sponsor segments reported to Sponsorblock
+#   sponsorblock_remove: [ sponsor ]
+#   profiles: [ default, small ]
 
 profiles:
   default:
+    container: mkv
     download:
-      format_sort: ['res:1080']
-    #stream_video: [ '-f', 'bv', '-S', 'vext:mkv,height~1080' ]
-    #stream_audio: [ '-f', 'ba', '-S', 'aext:mka' ]
-    #stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
+      format_sort: [ 'res:720' ]  # 720p, see yt-dlp README for description
+    live:
+      format_sort: [ 'res:720', 'ext:mp4' ]   # otherwise video streaming stalls
   small:
+    container: mkv
     download:
-      format_sort: ['res:540']
-#     #stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~540' ]
-#     #stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
-#     #stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
-# #Opus:
-# #    only_audio: [ '-f', 'ba', '-x', 'opus' ]
-
-
-#  # /feed/MasyanyaKuvaeva
-#  MasyanyaKuvaeva:
-#    # example using a YouTube /c/ custom url
-#    url: https://youtube.com/c/MasyanyaKuvaeva
-#    poll_seconds: 1
-
-#  # /feed/Weebl-Songs
-#  Weebl-Songs:
-#    # example using a YouTube playlist
-#    url: https://youtube.com/playlist?list=PL4F6FB1A731B89744
-#    # override some of the channel attributes
-#    overrides:
-#      title: Weebl's Songs
-#    max_entries: 10  # optional
-
-#  # /feed/Kurzgesagt
-#  Kurzgesagt:
-#    # example using a YouTube user url
-#    url: https://www.youtube.com/user/Kurzgesagt
-#    # cut out every segment reported to Sponsorblock
-#    sponsorblock_remove: [ all ]
-
-
-#########
-
-# use `authorization: ~` instead to disable the need to pass secrets
-#authorization:
-#  - user1: password1
-# TODO: implement ^
-
-#profiles:
-#  - FullHD:
-#      combined: [ '-S', 'height~1080' ]
-#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~1080' ]
-#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
-#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
-#  - small:
-#      combined: [ '-S', 'height~540' ]
-#      stream_video: [ '-f', 'bv', '-S', 'vext:mp4,height~540' ]
-#      stream_audio: [ '-f', 'ba', '-S', 'aext:m4a' ]
-#      stream_ffmpeg: [ '-vcodec', 'copy', '-acodec', 'copy' ]
-#  - Opus:
-#      only_audio: [ '-f', 'ba', '-x', 'opus' ]
-# TODO: implement ^
-
-#yt-dlp:
-#  extra_arguments: []
-
-#feed_defaults:
-  #max_entries: 5  # consider only the last N videos
-  #path_storage: /tmp/yousable
-  #path_completed_regular: /tmp/yousable/completed/regular
-  #path_completed_streams: /tmp/yousable/completed/streams
-  #path_live_streams: /tmp/yousable/live
-
+      format_sort: [ 'res:480' ]
+    live:
+      format_sort: [ 'res:480', 'ext:mp4' ]
+  audio:
+    video: false
+    container: opus
+    download:
+      format: 'ba[vcodec=none]'
+      format_sort: [ 'acodec:opus' ]
+    live:
+      format: 'ba[vcodec=none]'
