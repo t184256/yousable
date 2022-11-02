@@ -94,6 +94,7 @@ def monitor(config, feed):
 
         now = datetime.datetime.now(datetime.timezone.utc)
         max_age = datetime.timedelta(seconds=feed_cfg['keep_entries_seconds'])
+        max_age += datetime.timedelta(days=1)  # upload_date coarseness
         for entry_info in info['entries']:
             if 'upload_date' in entry_info and entry_info['upload_date']:
                 udts = datetime.datetime.strptime(entry_info['upload_date'],
