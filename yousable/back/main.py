@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2022 Alexander Sosedkin <monk@unboiled.info>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import datetime
 import glob
 import json
 import multiprocessing
 import os
+import pytz
 import random
 import shutil
 import sys
@@ -87,7 +89,14 @@ def monitor(config, feed):
         os.makedirs(feed_pathogen('meta'), exist_ok=True)
         _write_json(feed_pathogen('meta', 'feed.json'), info)
 
+        now = datetime.datetime.now(datetime.timezone.utc)
+        max_age = datetime.timedelta(seconds=feed_cfg['keep_entries_seconds'])
         for entry_info in info['entries']:
+            if 'upload_date' in entry_info and entry_info['upload_date']:
+                udts = datetime.datetime.strptime(entry_info['upload_date'],
+                                                  '%Y%m%d')
+                if now - pytz.utc.fromutc(udts) > max_age:
+                    continue  # too old
             def entry_pathogen(d, *r):
                 return feed_pathogen(d, entry_info['id'], *r)
             os.makedirs(entry_pathogen('meta'), exist_ok=True)
