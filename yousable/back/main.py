@@ -72,18 +72,21 @@ def monitor(config, feed):
             print(f'{feed}: ERROR {ex}', file=sys.stderr)
             time.sleep(feed_cfg['poll_seconds'] / 4)
             continue
-        if feed_cfg['live_url']:
-            print(f'{feed}: extra live check...')
-            try:
-                with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
-                    le = ydl.extract_info(feed_cfg['live_url'], download=False)
-                le = ydl.sanitize_info(le)
-                if le and 'entries' in le:
-                    info['entries'].extend(le['entries'])
-                elif le and le['id'] not in info['entries']:
-                    info['entries'].append(le)
-            except Exception as ex:
-                print(f'{feed}: ERROR {ex}', file=sys.stderr)
+        if feed_cfg['extra_urls']:
+            for extra_url in feed_cfg['extra_urls']:
+                print(f'{feed}: extra url check {extra_url}...')
+                try:
+                    with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
+                        ee = ydl.extract_info(extra_url, download=False)
+                    ee = ydl.sanitize_info(ee)
+                    if ee and 'entries' in ee:
+                        for eee in ee['entries']:
+                            if eee not in info['entries']:
+                                info['entries'].append(eee)
+                    elif ee and ee['id'] not in info['entries']:
+                        info['entries'].append(ee)
+                except Exception as ex:
+                    print(f'{feed}: ERROR {ex} {extra_url}', file=sys.stderr)
         print(f'{feed}: refreshed.')
 
         os.makedirs(feed_pathogen('meta'), exist_ok=True)

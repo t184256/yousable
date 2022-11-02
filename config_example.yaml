@@ -22,7 +22,7 @@ feed_defaults:
 feeds:
   AdaDeranaNews:  # random channel with frequent updates, sometimes livestreams
     url: https://www.youtube.com/c/AdaDeranaNews  # /c/ url
-    live_url: https://www.youtube.com/c/Hearthstone/live
+    extra_urls: [ https://www.youtube.com/c/AdaDeranaNews/live ]
     poll_seconds: 600
 
 # BlenderStudio:  # slowly updating channel, has subtitles
@@ -33,12 +33,15 @@ feeds:
 #   load_entries: 1
 #   keep_entries: 10
 #   url: https://www.youtube.com/c/Hearthstone
-#   live_url: https://www.youtube.com/c/Hearthstone/live
+#   extra_urls: [ https://www.youtube.com/c/Hearthstone/live ]
 #   profiles: [ small, audio ]
 
 # JG:  # has mostly streams
-#   url: https://www.youtube.com/playlist?list=UUWAIvx2yYLK_xTYD4F2mUNw
-#   live_url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw/live
+#   load_entries: 2
+#   url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw
+#   extra_urls:
+#     - https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw/live
+#     - https://www.youtube.com/playlist?list=UUWAIvx2yYLK_xTYD4F2mUNw
 #   profiles: [ small, audio ]
 #   overrides:
 #     title: Живой Гвоздь  # change feed title
