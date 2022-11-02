@@ -30,8 +30,10 @@ def slice(infile, outbasename, outext, i, start_time=None, duration=None):
     infile = infile + '.part' if os.path.exists(infile + '.part') else infile
     tmp = f'{outbasename}.{i:02d}.tmp.{outext}'
     out = f'{outbasename}.{i:02d}.{outext}'
+    print(f'slice: {outbasename} {start_time} {duration}', file=sys.stderr)
     if os.path.exists(out):
         return
+    print(f'slicing...', file=sys.stderr)
     print(f'{out} encoding...', file=sys.stderr)
     input_ = ffmpeg.input(infile, ss=start_time, t=duration)
     ffmpeg.output(input_, tmp, acodec=outext, strict=-2)\
@@ -52,7 +54,7 @@ def slice_final(infile, outbasename, outext, slice_duration):
     total_duration = get_duration(infile)
     slice_intermediate(infile, outbasename, outext,
                        total_duration, slice_duration)
-    i = duration // slice_duration + 1
+    i = total_duration // slice_duration
     rest_duration = total_duration - i * slice_duration
     slice(infile, outbasename, outext, i, i * slice_duration, rest_duration)
     return total_duration
@@ -158,12 +160,13 @@ def live_audio(config, feed, entry_pathogen, profile):
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
     while True:
+        fnames = set()
         def subp():
             try:
                 with yt_dlp.YoutubeDL(dl_opts) as ydl:
                     # doesn't re-sort formats
                     #r = ydl.download_with_info_file(...)
-                    r = ydl.download(entry_info['original_url'])
+                    r = ydl.download(entry_info['webpage_url'])
                     if r == 0:
                         os._exit(0)
             except Exception as ex:
@@ -179,10 +182,12 @@ def live_audio(config, feed, entry_pathogen, profile):
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        outmarker = entry_pathogen('tmp', profile, 'media')
-        print('>>>', f'{p.exitcode} {os.path.exists(outmarker)}',
+        finmedia = entry_pathogen('tmp', profile, 'media')
+        if not fname_collector.empty():
+            fnames.update(fname_collector.get())
+        print('>>>', f'{p.exitcode} {os.path.exists(finmedia)}',
               file=sys.stderr)
-        if p.exitcode == 0 or os.path.exists(outmarker):
+        if p.exitcode == 0 or os.path.exists(finmedia):
             print('>>>', 'done! proceeding to final slicing', file=sys.stderr)
             break
         else:
@@ -190,8 +195,11 @@ def live_audio(config, feed, entry_pathogen, profile):
             time.sleep(10)
             print('>>>', 'restarting...', file=sys.stderr)
 
-
-    input_ = entry_pathogen('tmp', profile, fname_collector.get())
+    if os.path.exists(finmedia):
+        input_ = finmedia
+    else:
+        input_ = entry_pathogen('tmp', profile, fnames)
+    print('>>>', f'merging ({input_})...', file=sys.stderr)
     slice_final(input_, os.path.join(dir_, fname), container,
                 config['feeds'][feed]['live_slice_seconds'])
 

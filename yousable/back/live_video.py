@@ -36,8 +36,10 @@ def slice_and_merge(infiles, outbasename, outext, i,
                for f in infiles]
     tmp = f'{outbasename}.{i:02d}.tmp.{outext}'
     out = f'{outbasename}.{i:02d}.{outext}'
+    print(f'slice: {outbasename} {start_time} {duration}', file=sys.stderr)
     if os.path.exists(out):
         return
+    print(f'slicing...', file=sys.stderr)
     inputs = [ffmpeg.input(f, ss=start_time, t=duration) for f in infiles]
     ffmpeg.output(*inputs, tmp, vcodec='copy', acodec='copy')\
           .run(overwrite_output=True)#, quiet=True)
@@ -58,7 +60,7 @@ def slice_and_merge_final(infiles, outbasename, outext, slice_duration):
     total_duration = min(get_durations(infiles))
     slice_and_merge_intermediate(infiles, outbasename, outext,
                                  total_duration, slice_duration)
-    i = duration // slice_duration + 1
+    i = total_duration // slice_duration
     rest_duration = total_duration - i * slice_duration
     slice_and_merge(infiles, outbasename, outext, i, i * slice_duration,
                     rest_duration)
@@ -71,12 +73,16 @@ class DownloadStuckError(RuntimeError):
 
 def make_progress_hook(log_prefix, tmp_path, out_path, container,
                        slice_duration, fname_collector,
-                       target_interval=20, watchdog_stuck_max=100):
+                       target_interval=20,
+                       watchdog_stuck_max_desync=100,
+                       watchdog_stuck_max_seconds=60):
     lock = threading.Lock()
-    seg_log, progresses, last_reported_segs, last_reported_time = [], {}, [], 0
+    progresses, last_reported_segs, last_reported_time = {}, [], 0
+    seg_log_desync, seg_log_timed = [], []
     observed_duration = written_duration = 0
     def progress_hook(d):
-        nonlocal seg_log, progresses, last_reported_segs, last_reported_time
+        nonlocal progresses, last_reported_segs, last_reported_time
+        nonlocal seg_log_desync, seg_log_timed
         nonlocal observed_duration, written_duration
         now = time.time()
 
@@ -89,21 +95,32 @@ def make_progress_hook(log_prefix, tmp_path, out_path, container,
         progresses[d['filename']] = (i, l)
         segments_pretty_progress = ' & '.join(f'{i}/{l}'
                                               for i, l in progresses.values())
-        segs = [(i) for i, _ in progresses.values()]
+        segs = tuple([i for i, _ in progresses.values()])
         if len(segs) < 2:
             return
         min_ = min(segs)
         max_ = max(l for _, l in progresses.values())
 
-        seg_log_new = [i for i, _ in progresses.values()]
-        if not seg_log or seg_log[-1] != seg_log_new:
-            seg_log.append(seg_log_new)
-        if len(seg_log) >= watchdog_stuck_max:
-            seg_log = seg_log[-watchdog_stuck_max:]
-            if len({a for a, _ in seg_log}) == 1:
+        seg_log_timed.append((now, segs))
+        if not seg_log_desync or seg_log_desync[-1] != segs:
+            seg_log_desync.append(segs)
+        if len(seg_log_desync) > watchdog_stuck_max_desync:
+            seg_log_desync = seg_log_desync[-watchdog_stuck_max_desync:]
+        if seg_log_timed[0][0] < now - watchdog_stuck_max_seconds:
+            # kill if no progress whatsoever for watchdog_stuck_max_seconds
+            if len({s for _, s in seg_log_timed}) < 2:
                 raise DownloadStuckError()
-            if len({b for _, b in seg_log}) == 1:
-                raise DownloadStuckError()
+            # kill if progress is lopsided for watchdog_stuck_max_desync
+            if len(seg_log_desync) >= watchdog_stuck_max_desync:
+                if len({a for a, _ in seg_log_desync}) == 1:
+                    raise DownloadStuckError()
+                if len({b for _, b in seg_log_desync}) == 1:
+                    raise DownloadStuckError()
+            # trim timed list
+            while (seg_log_timed
+                   and seg_log_timed[0][0] < now - watchdog_stuck_max_seconds):
+                seg_log_timed.pop(0)
+
 
         if (segs != last_reported_segs
                 or now > last_reported_time + target_interval):
@@ -190,12 +207,13 @@ def live_video(config, feed, entry_pathogen, profile):
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
     while True:
+        fnames = set()
         def subp():
             try:
                 with yt_dlp.YoutubeDL(dl_opts) as ydl:
                     # doesn't re-sort formats
                     #r = ydl.download_with_info_file(...)
-                    r = ydl.download(entry_info['original_url'])
+                    r = ydl.download(entry_info['webpage_url'])
                     if r == 0:
                         os._exit(0)
             except DownloadStuckError as ex:
@@ -210,10 +228,12 @@ def live_video(config, feed, entry_pathogen, profile):
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        outmarker = entry_pathogen('tmp', profile, 'media')
-        print('>>>', f'{p.exitcode} {os.path.exists(outmarker)}',
+        finmedia = entry_pathogen('tmp', profile, 'media')
+        if not fname_collector.empty():
+            fnames.update(fname_collector.get())
+        print('>>>', f'{p.exitcode} {os.path.exists(finmedia)}',
               file=sys.stderr)
-        if p.exitcode == 0 or os.path.exists(outmarker):
+        if p.exitcode == 0 or os.path.exists(finmedia):
             print('>>>', 'done! proceeding to final slicing', file=sys.stderr)
             break
         else:
@@ -221,7 +241,11 @@ def live_video(config, feed, entry_pathogen, profile):
             time.sleep(10)
             print('>>>', 'restarting...', file=sys.stderr)
 
-    inputs = [entry_pathogen('tmp', profile, x) for x in fname_collector.get()]
+    if os.path.exists(finmedia):
+        inputs = [finmedia]
+    else:
+        inputs = [entry_pathogen('tmp', profile, x) for x in fnames]
+    print('>>>', f'merging ({inputs})...', file=sys.stderr)
     slice_and_merge_final(inputs, os.path.join(dir_, fname), container,
                           config['feeds'][feed]['live_slice_seconds'])
 
