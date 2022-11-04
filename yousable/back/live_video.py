@@ -11,8 +11,29 @@ import threading
 import time
 
 import yt_dlp
+import yt_dlp.postprocessor.ffmpeg
+
 import ffmpeg
 import fasteners
+
+
+class NotAvailFFmpegMergerPP(yt_dlp.postprocessor.ffmpeg.FFmpegMergerPP):
+    def __init__(self, *a, **kwa):
+        print('>>> NotAvailFFmpegMergerPP init', file=sys.stderr)
+        super(NotAvailFFmpegMergerPP, self).__init__(*a, **kwa)
+
+    @property
+    def available(self):
+        print('>>> NotAvailFFmpegMergerPP STUBBED OUT', file=sys.stderr)
+        return False
+
+
+def stub_out_merger():
+    import sys
+    sys.modules['yt_dlp'].postprocessor.ffmpeg.FFmpegMergerPP = \
+            NotAvailFFmpegMergerPP
+    del sys.modules['yt_dlp']
+    import yt_dlp
 
 
 def get_durations(infiles):
@@ -36,11 +57,17 @@ def slice_and_merge(infiles, outbasename, outext, i,
                for f in infiles]
     tmp = f'{outbasename}.{i:02d}.tmp.{outext}'
     out = f'{outbasename}.{i:02d}.{outext}'
-    print(f'slice: {outbasename} {start_time} {duration}', file=sys.stderr)
+    print(f'slice: {outbasename} {i} {start_time} {duration}',
+          file=sys.stderr)
     if os.path.exists(out):
         return
     print(f'slicing...', file=sys.stderr)
-    inputs = [ffmpeg.input(f, ss=start_time, t=duration) for f in infiles]
+    extra_kwargs = {}
+    if start_time is not None:
+        extra_kwargs['ss'] = start_time
+    if duration is not None:
+        extra_kwargs['t'] = duration
+    inputs = [ffmpeg.input(f, **extra_kwargs) for f in infiles]
     ffmpeg.output(*inputs, tmp, vcodec='copy', acodec='copy')\
           .run(overwrite_output=True)#, quiet=True)
     assert os.path.exists(tmp)
@@ -61,9 +88,7 @@ def slice_and_merge_final(infiles, outbasename, outext, slice_duration):
     slice_and_merge_intermediate(infiles, outbasename, outext,
                                  total_duration, slice_duration)
     i = total_duration // slice_duration
-    rest_duration = total_duration - i * slice_duration
-    slice_and_merge(infiles, outbasename, outext, i, i * slice_duration,
-                    rest_duration)
+    slice_and_merge(infiles, outbasename, outext, i, i * slice_duration)
     return total_duration
 
 
@@ -180,9 +205,10 @@ def live_video(config, feed, entry_pathogen, profile):
 
     fname_collector = multiprocessing.Queue()
     dl_opts = {
-        'quiet': True,
-        #'verbose': True,
+        #'quiet': True,
+        'verbose': True,
         'keepvideo': True,
+        'keepfragments': True,  # keep or not?
         'skip_unavailable_fragments': False,
         'noprogress': True,
         'progress_hooks': [make_progress_hook(
@@ -200,15 +226,19 @@ def live_video(config, feed, entry_pathogen, profile):
         },
         'live_from_start': True,
         **config['profiles'][profile]['live'],
-        'allow_unplayable_formats': True  # should prevent final yt-dlp merging
+        #'allow_unplayable_formats': True  # should prevent final yt-dlp merging
     }
 
     os.makedirs(dir_, exist_ok=True)
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
-    while True:
+    finmedia = entry_pathogen('tmp', profile, 'media')
+    post_live_left = 3
+    while post_live_left:
         fnames = set()
         def subp():
+            # HACKY: monkey-patching to prevent merging
+            stub_out_merger()
             try:
                 with yt_dlp.YoutubeDL(dl_opts) as ydl:
                     # doesn't re-sort formats
@@ -223,12 +253,19 @@ def live_video(config, feed, entry_pathogen, profile):
             os._exit(1)
         for x in glob.glob(entry_pathogen('tmp', profile, '*-Frag*')):
             os.unlink(x)
+        with yt_dlp.YoutubeDL(dl_opts) as ydl:
+            info = ydl.extract_info(entry_info['webpage_url'],
+                                    download=False)
+            if info.get('live_status') != 'is_live':
+                print('>>>', f'NOT LIVE ANYMORE, {post_live_left} left',
+                      file=sys.stderr)
+                post_live_left -= 1
+                continue
         p = multiprocessing.Process(target=subp)
         print('>>>', 'started...', file=sys.stderr)
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        finmedia = entry_pathogen('tmp', profile, 'media')
         if not fname_collector.empty():
             fnames.update(fname_collector.get())
         print('>>>', f'{p.exitcode} {os.path.exists(finmedia)}',
@@ -238,13 +275,16 @@ def live_video(config, feed, entry_pathogen, profile):
             break
         else:
             print('>>>', 'sleeping...', file=sys.stderr)
-            time.sleep(10)
+            time.sleep(5)
             print('>>>', 'restarting...', file=sys.stderr)
 
+    print(f'fnames={fnames}', file=sys.stderr)
     if os.path.exists(finmedia):
         inputs = [finmedia]
-    else:
+    elif fnames:
         inputs = [entry_pathogen('tmp', profile, x) for x in fnames]
+    else:
+        inputs = glob.glob(entry_pathogen('tmp', profile, '*.part'))
     print('>>>', f'merging ({inputs})...', file=sys.stderr)
     slice_and_merge_final(inputs, os.path.join(dir_, fname), container,
                           config['feeds'][feed]['live_slice_seconds'])

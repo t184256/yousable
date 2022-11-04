@@ -35,7 +35,12 @@ def slice(infile, outbasename, outext, i, start_time=None, duration=None):
         return
     print(f'slicing...', file=sys.stderr)
     print(f'{out} encoding...', file=sys.stderr)
-    input_ = ffmpeg.input(infile, ss=start_time, t=duration)
+    extra_kwargs = {}
+    if start_time is not None:
+        extra_kwargs['ss'] = start_time
+    if duration is not None:
+        extra_kwargs['t'] = duration
+    input_ = ffmpeg.input(infile, **extra_kwargs)
     ffmpeg.output(input_, tmp, acodec=outext, strict=-2)\
           .run(overwrite_output=True, quiet=True)
     assert os.path.exists(tmp)
@@ -55,8 +60,7 @@ def slice_final(infile, outbasename, outext, slice_duration):
     slice_intermediate(infile, outbasename, outext,
                        total_duration, slice_duration)
     i = total_duration // slice_duration
-    rest_duration = total_duration - i * slice_duration
-    slice(infile, outbasename, outext, i, i * slice_duration, rest_duration)
+    slice(infile, outbasename, outext, i, i * slice_duration)
     return total_duration
 
 
@@ -133,8 +137,8 @@ def live_audio(config, feed, entry_pathogen, profile):
 
     fname_collector = multiprocessing.Queue()
     dl_opts = {
-        'quiet': True,
-        #'verbose': True,
+        #'quiet': True,
+        'verbose': True,
         'keepvideo': True,
         'skip_unavailable_fragments': False,
         'noprogress': True,
@@ -153,13 +157,15 @@ def live_audio(config, feed, entry_pathogen, profile):
         },
         'live_from_start': True,
         **config['profiles'][profile]['live'],
-        'allow_unplayable_formats': True  # should prevent final yt-dlp merging
+        #'allow_unplayable_formats': True  # should prevent final yt-dlp merging
     }
 
     os.makedirs(dir_, exist_ok=True)
     os.makedirs(entry_pathogen('tmp', profile), exist_ok=True)
 
-    while True:
+    finmedia = entry_pathogen('tmp', profile, 'media')
+    post_live_left = 3
+    while post_live_left:
         fnames = set()
         def subp():
             try:
@@ -177,12 +183,19 @@ def live_audio(config, feed, entry_pathogen, profile):
             os._exit(1)
         for x in glob.glob(entry_pathogen('tmp', profile, '*-Frag*')):
             os.unlink(x)
+        with yt_dlp.YoutubeDL(dl_opts) as ydl:
+            info = ydl.extract_info(entry_info['webpage_url'],
+                                    download=False)
+            if info.get('live_status') != 'is_live':
+                print('>>>', f'NOT LIVE ANYMORE, {post_live_left} left',
+                      file=sys.stderr)
+                post_live_left -= 1
+                continue
         p = multiprocessing.Process(target=subp)
         print('>>>', 'started...', file=sys.stderr)
         p.start()
         print('>>>', 'joining...', file=sys.stderr)
         p.join()
-        finmedia = entry_pathogen('tmp', profile, 'media')
         if not fname_collector.empty():
             fnames.update(fname_collector.get())
         print('>>>', f'{p.exitcode} {os.path.exists(finmedia)}',
@@ -192,13 +205,16 @@ def live_audio(config, feed, entry_pathogen, profile):
             break
         else:
             print('>>>', 'sleeping...', file=sys.stderr)
-            time.sleep(10)
+            time.sleep(5)
             print('>>>', 'restarting...', file=sys.stderr)
 
+    print(f'fnames={fnames}', file=sys.stderr)
     if os.path.exists(finmedia):
         input_ = finmedia
+    elif fnames:
+        input_ = [entry_pathogen('tmp', profile, x) for x in fnames][0]
     else:
-        input_ = entry_pathogen('tmp', profile, fnames)
+        input_ = glob.glob(entry_pathogen('tmp', profile, '*.part'))[0]
     print('>>>', f'merging ({input_})...', file=sys.stderr)
     slice_final(input_, os.path.join(dir_, fname), container,
                 config['feeds'][feed]['live_slice_seconds'])

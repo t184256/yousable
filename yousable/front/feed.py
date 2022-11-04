@@ -38,7 +38,7 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
     live_status = e.get('live_status')
     if live_status and live_status != 'was_live':
         live_status = str(live_status).removeprefix('is_')
-        title = f'[{live_status}] {title}'
+        title = f'[{live_status} {e["id"][:4]}] {title}'
     fe.title(title)
 
     description = e['description'] or e['fulltitle']
