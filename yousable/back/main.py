@@ -74,7 +74,7 @@ def monitor(config, feed):
             continue
         if feed_cfg['extra_urls']:
             for extra_url in feed_cfg['extra_urls']:
-                print(f'{feed}: extra url check {extra_url}...')
+                print(f'{feed} {len(info["entries"])}: extra url check {extra_url}...')
                 try:
                     with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                         ee = ydl.extract_info(extra_url, download=False)
@@ -87,7 +87,7 @@ def monitor(config, feed):
                         info['entries'].append(ee)
                 except Exception as ex:
                     print(f'{feed}: ERROR {ex} {extra_url}', file=sys.stderr)
-        print(f'{feed}: refreshed.')
+        print(f'{feed} {len(info["entries"])}: refreshed.')
 
         os.makedirs(feed_pathogen('meta'), exist_ok=True)
         _write_json(feed_pathogen('meta', 'feed.json'), info)
@@ -96,10 +96,13 @@ def monitor(config, feed):
         max_age = datetime.timedelta(seconds=feed_cfg['keep_entries_seconds'])
         max_age += datetime.timedelta(days=1)  # upload_date coarseness
         for entry_info in info['entries']:
-            if 'upload_date' in entry_info and entry_info['upload_date']:
+            if ('upload_date' in entry_info and entry_info['upload_date']
+                    and entry_info.get('live_status') != 'is_live'):
                 udts = datetime.datetime.strptime(entry_info['upload_date'],
                                                   '%Y%m%d')
                 if now - pytz.utc.fromutc(udts) > max_age:
+                    print(f'skipping too old {entry_info["title"]}!', file=sys.stderr)
+                    print(now - pytz.utc.fromutc(udts), max_age, file=sys.stderr)
                     continue  # too old
             def entry_pathogen(d, *r):
                 return feed_pathogen(d, entry_info['id'], *r)
