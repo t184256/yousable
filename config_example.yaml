@@ -59,13 +59,15 @@ profiles:
     download:
       format_sort: [ 'res:720' ]  # 720p, see yt-dlp README for description
     live:
-      format_sort: [ 'res:720', 'ext:mp4' ]   # otherwise video streaming stalls
+      video:
+        format_sort: [ 'res:720', 'ext:mp4' ]   # or video streaming stalls
   small:
     container: mkv
     download:
       format_sort: [ 'res:480' ]
     live:
-      format_sort: [ 'res:480', 'ext:mp4' ]
+      video:
+        format_sort: [ 'res:480', 'ext:mp4' ]
   audio:
     video: false
     container: opus
@@ -73,4 +75,5 @@ profiles:
       format: 'ba[vcodec=none]'
       format_sort: [ 'acodec:opus' ]
     live:
-      format: 'ba[vcodec=none]'
+      audio:
+        format_sort: [ 'acodec:opus' ]
