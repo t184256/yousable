@@ -73,7 +73,7 @@
           };
           config = lib.mkIf cfg.enable {
             users = {
-              users.yousable.home = "/tmp/yousable";  # TODO: /var/lib?
+              users.yousable.home = "/var/lib/yousable";
               users.yousable.createHome = true;
               users.yousable.isSystemUser = true;
               users.yousable.group = "yousable";
