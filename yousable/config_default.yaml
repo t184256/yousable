@@ -23,7 +23,9 @@ profiles:
     video: True
     container: mkv
     download: {}
-    live: {}
+    live:
+      audio: {}
+      video: {}
 
 
 # also needs `feeds` to work, see config_example.yaml

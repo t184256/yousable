@@ -71,7 +71,10 @@ def load_config():
             'container': confuse.Choice(CONTAINER_CHOICES),
             'video': confuse.Choice([True, False], default=True),
             'download': dict,
-            'live': confuse.Optional(dict),
+            'live': confuse.Optional({
+                'audio': confuse.Optional(dict, default={}),
+                'video': confuse.Optional(dict, default={}),
+            }),
         }),
         'feeds': confuse.MappingValues(config_template_feed),
     }

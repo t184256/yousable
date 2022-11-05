@@ -20,6 +20,10 @@ import yousable.sponsorblock
 from yousable.sponsorblock import SponsorBlockPPCached
 
 
+def shorten(s, to=30):
+    return s[:to-1] + '…' if len(s) > 30 else s
+
+
 def _add_postprocessor(ydl, pp, **kwargs):
     ydl.add_post_processor(pp(ydl, **kwargs), when='post_process')
 
@@ -70,8 +74,7 @@ def download(config, feed, entry_pathogen, profile):
     sb_cats = config['feeds'][feed]['sponsorblock_remove']
 
     pretty_log_name = f'{profile} {entry_info["id"]} {entry_info["title"]}'
-    if len(pretty_log_name) > 30:
-        pretty_log_name = pretty_log_name[:27] + '...'
+    pretty_log_name = shorten(pretty_log_name)
 
     sb = None
     sb_global_path = entry_pathogen('meta', 'sponsorblock.json')

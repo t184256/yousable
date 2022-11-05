@@ -15,14 +15,20 @@ import time
 import yt_dlp
 
 from yousable.back.download import download
-from yousable.back.live_video import live_video
-from yousable.back.live_audio import live_audio
+from yousable.back.stream import stream
 
 
 def _start_process(target, *args):
     p = multiprocessing.Process(target=target, args=args)
     p.start()
     return p
+
+
+def stream_then_download(config, feed, entry_info, entry_pathogen,
+                         profile, video):
+    stream(config, feed, entry_info, entry_pathogen, profile, video)
+    if _download_enabled(config, profile):
+        download(config, feed, entry_pathogen, profile)
 
 
 def _write_json(path, data):
@@ -41,7 +47,7 @@ def _live_enabled(lg, config, profile):
     return True
 
 
-def _download_enabled(lg, config, profile):
+def _download_enabled(config, profile):
     if config['profiles'][profile]['download'] is None:
         return False
     return True
@@ -117,14 +123,12 @@ def monitor(config, feed):
                     live_status = entry_info.get('live_status')
                     if live_status == 'is_live':
                         if _live_enabled(lg, config, profile):
-                            if config['profiles'][profile]['video']:
-                                _start_process(live_video, config, feed,
-                                               entry_pathogen, profile)
-                            else:
-                                _start_process(live_audio, config, feed,
-                                               entry_pathogen, profile)
+                            video=config['profiles'][profile]['video']
+                            _start_process(stream_then_download, config, feed,
+                                           entry_info, entry_pathogen,
+                                           profile, video)
                     else:
-                        if _download_enabled(lg, config, profile):
+                        if _download_enabled(config, profile):
                             _start_process(download, config, feed,
                                            entry_pathogen, profile)
 
