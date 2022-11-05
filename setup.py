@@ -23,6 +23,7 @@ setup(
         'fasteners',
         'mutagen',
         'ffmpeg-python',
+        'setproctitle',
     ],
     entry_points={
         'console_scripts': [

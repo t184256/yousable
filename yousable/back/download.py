@@ -19,6 +19,8 @@ from yt_dlp.postprocessor.modify_chapters import ModifyChaptersPP
 import yousable.sponsorblock
 from yousable.sponsorblock import SponsorBlockPPCached
 
+from yousable.utils import proctitle
+
 
 def shorten(s, to=30):
     return s[:to-1] + '…' if len(s) > 30 else s
@@ -55,6 +57,7 @@ def make_progress_hook(log_prefix, target_interval=20):
             pretty_progresses = ' '.join(f'{int(x * 100):3}%'
                                          for x in progresses.values())
             print(f'{log_prefix}: {pretty_progresses}', file=sys.stderr)
+            proctitle(pretty_progresses)
             last_reported_progresses = progresses.copy()
             last_reported_time = now
 
@@ -63,8 +66,10 @@ def make_progress_hook(log_prefix, target_interval=20):
 
 def download(config, feed, entry_pathogen, profile):
     lockfile = entry_pathogen('tmp', profile, 'lock')
+    proctitle('locking...')
     l = fasteners.process_lock.InterProcessLock(lockfile)
     l.acquire()
+    proctitle('locked')
     start = time.time()
     with open(entry_pathogen('meta', 'entry.json')) as f:
         entry_info = json.load(f)
@@ -80,6 +85,7 @@ def download(config, feed, entry_pathogen, profile):
     sb_global_path = entry_pathogen('meta', 'sponsorblock.json')
     sb_specific_path = entry_pathogen('out', f'.{profile}.sponsorblock.json')
     if sb_cats:
+        proctitle('querying sponsorblock...')
         sb = yousable.sponsorblock.query_cached(entry_info["id"],
                                                 sb_global_path)
         sb_prev = yousable.sponsorblock.file_read(sb_specific_path)
@@ -87,6 +93,7 @@ def download(config, feed, entry_pathogen, profile):
             if not yousable.sponsorblock.is_outdated(sb_prev, sb):
                 print(f'{pretty_log_name} has already been downloaded',
                       file=sys.stderr)
+                proctitle('done, already downloaded')
                 return
             else:
                 print(f'{pretty_log_name} SponsorBlock data out of date, '
@@ -137,6 +144,7 @@ def download(config, feed, entry_pathogen, profile):
                                    preferredcodec=container)
             if not audio_only:
                 _add_postprocessor(ydl, EmbedThumbnailPP)
+            proctitle('downloading...')
             print(f'{pretty_log_name} begins downloading', file=sys.stderr)
             # doesn't re-sort formats
             #r = ydl.download_with_info_file(entry_pathogen('meta', 'entry.json'))
@@ -147,6 +155,7 @@ def download(config, feed, entry_pathogen, profile):
         shutil.rmtree(entry_pathogen('tmp', profile))
         raise
 
+    proctitle('moving...')
     tmp_fname = entry_pathogen('tmp', profile, 'media.' + container)
     if not os.path.exists(tmp_fname):
         # some really weird bug where extension gets eaten?
@@ -158,7 +167,9 @@ def download(config, feed, entry_pathogen, profile):
     shutil.move(tmp_fname, entry_pathogen('out', profile + '.' + container))
     if sb_cats:
         yousable.sponsorblock.file_write(sb, sb_specific_path)
+    #proctitle('cleaning...')
     #shutil.rmtree(entry_pathogen('tmp', profile))
     l.release()
+    proctitle('finished')
     print(f'{pretty_log_name} has finished downloading '
           f'in {time.time() - start:.1f}s')

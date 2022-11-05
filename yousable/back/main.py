@@ -16,12 +16,7 @@ import yt_dlp
 
 from yousable.back.download import download
 from yousable.back.stream import stream
-
-
-def _start_process(target, *args):
-    p = multiprocessing.Process(target=target, args=args)
-    p.start()
-    return p
+from yousable.utils import start_process, proctitle, reap
 
 
 def stream_then_download(config, feed, entry_info, entry_pathogen,
@@ -54,6 +49,7 @@ def _download_enabled(config, profile):
 
 
 def monitor(config, feed):
+    children = []
     while True:
         def feed_pathogen(d, *r):
             return os.path.join(config['paths'][d], feed, *r)
@@ -70,6 +66,7 @@ def monitor(config, feed):
             'playlist_items': f'{feed_cfg["load_entries"]}::-1'
         }
         print(f'{feed}: refreshing...')
+        proctitle('refreshing...')
         try:
             with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                 info = ydl.extract_info(feed_cfg['url'], download=False)
@@ -94,6 +91,7 @@ def monitor(config, feed):
                 except Exception as ex:
                     print(f'{feed}: ERROR {ex} {extra_url}', file=sys.stderr)
         print(f'{feed} {len(info["entries"])}: refreshed.')
+        proctitle('refreshed')
 
         os.makedirs(feed_pathogen('meta'), exist_ok=True)
         _write_json(feed_pathogen('meta', 'feed.json'), info)
@@ -123,20 +121,35 @@ def monitor(config, feed):
                     live_status = entry_info.get('live_status')
                     if live_status == 'is_live':
                         if _live_enabled(lg, config, profile):
-                            video=config['profiles'][profile]['video']
-                            _start_process(stream_then_download, config, feed,
-                                           entry_info, entry_pathogen,
-                                           profile, video)
+                            video = config['profiles'][profile]['video']
+                            start_process(('stream_then_dl '
+                                           f'{entry_info["id"]} {profile}'),
+                                          stream_then_download,
+                                          config, feed,
+                                          entry_info, entry_pathogen,
+                                          profile, video)
                     else:
                         if _download_enabled(config, profile):
-                            _start_process(download, config, feed,
-                                           entry_pathogen, profile)
+                            start_process(('download '
+                                           f'{entry_info["id"]} {profile}'),
+                                          download,
+                                          config, feed,
+                                          entry_pathogen, profile)
 
+        proctitle('reaping...')
+        time.sleep(1)
+        reap()
+
+        proctitle()
         time.sleep(feed_cfg['poll_seconds'] * (1 - random.random() / 100))
 
+        proctitle('cleaning...')
         c = cleanup(config, feed, feed_pathogen)
         if c:
             print(f'{feed}: cleaned up {len(c)} items.')
+
+        proctitle('reaping...')
+        reap()
 
 
 def _entry_ts(feed_pathogen, feed, entry_id):
@@ -185,8 +198,11 @@ def cleanup(config, feed, feed_pathogen):
 
 def main(config):
     monitors = []
+    proctitle('spinning up...')
     for feed in config['feeds']:
-        monitors.append(_start_process(monitor, config, feed))
+        monitors.append(start_process(f'monitor {feed}', monitor,
+                                      config, feed))
         time.sleep(random.random() * 5)
+    proctitle('up and running')
     for p in monitors:
         p.join()

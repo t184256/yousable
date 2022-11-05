@@ -12,6 +12,7 @@ pkgs.mkShell {
       fasteners
       mutagen
       ffmpeg-python
+      setproctitle
     ]))
   ];
   nativeBuildInputs = (with pkgs.python3Packages; [

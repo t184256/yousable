@@ -22,6 +22,7 @@
             fasteners
             mutagen
             ffmpeg-python
+            setproctitle
           ] ++ (with pkgs; [
             ffmpeg
           ]
