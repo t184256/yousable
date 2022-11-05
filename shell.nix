@@ -2,7 +2,7 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     yt-dlp
-    ffmpeg
+    ffmpeg_5-headless
     (python3.withPackages (ps: with ps; [
       flask
       flask-httpauth

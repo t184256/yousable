@@ -138,7 +138,7 @@ def download(config, feed, entry_pathogen, profile):
                                    cachefile=sb_global_path)
                 _add_postprocessor(ydl, ModifyChaptersPP,
                                    remove_sponsor_segments=sb_cats,
-                                   force_keyframes=True)
+                                   force_keyframes=False)  # so much faster
             if audio_only:
                 _add_postprocessor(ydl, FFmpegExtractAudioPP,
                                    preferredcodec=container)

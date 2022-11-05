@@ -24,7 +24,7 @@
             ffmpeg-python
             setproctitle
           ] ++ (with pkgs; [
-            ffmpeg
+            ffmpeg_5-headless
           ]
           );
           doCheck = false;
@@ -80,7 +80,7 @@
               groups.yousable = {};
             };
             systemd.services.yousable-back = {
-              path = [ pkgs.yt-dlp pkgs.ffmpeg ];
+              path = [ pkgs.yt-dlp pkgs.ffmpeg_5-headless ];
               description = "Podcast generator based on yt-dlp: downloader";
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
