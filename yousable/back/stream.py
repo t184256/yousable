@@ -282,6 +282,6 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
           f'in {time.time() - start:.1f}s')
     proctitle('done')
 
-    #if video:
-    #    shutil.rmtree(dir_video)
-    #shutil.rmtree(dir_audio)
+    if video:
+        shutil.rmtree(dir_video)
+    shutil.rmtree(dir_audio)
