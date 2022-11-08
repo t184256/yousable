@@ -82,12 +82,18 @@ def monitor(config, feed):
                     with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                         ee = ydl.extract_info(extra_url, download=False)
                     ee = ydl.sanitize_info(ee)
+                    ids = [x['id'] for x in info['entries']]
                     if ee and 'entries' in ee:
                         for eee in ee['entries']:
-                            if eee not in info['entries']:
+                            if eee['id'] not in ids:
+                                print(f'{feed}: extra n {eee["id"]}',
+                                      file=sys.stderr)
                                 info['entries'].append(eee)
-                    elif ee and ee['id'] not in info['entries']:
+                    elif ee and ee['id'] not in ids:
+                        print(f'{feed}: extra 1 {ee["id"]}', file=sys.stderr)
                         info['entries'].append(ee)
+                    else:
+                        print(f'{feed}: WHAT IS {ee}', file=sys.stderr)
                 except Exception as ex:
                     print(f'{feed}: ERROR {ex} {extra_url}', file=sys.stderr)
         print(f'{feed} {len(info["entries"])}: refreshed.')
