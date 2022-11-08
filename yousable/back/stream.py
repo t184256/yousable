@@ -223,7 +223,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     proctitle('locked')
     start = time.time()
 
-    fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}.{profile}'
+    fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}'
     dir_ = os.path.join(config['paths']['live'], profile, feed)
     outbasename = os.path.join(dir_, fname)
     outext = config['profiles'][profile]['container']
