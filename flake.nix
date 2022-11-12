@@ -86,7 +86,7 @@
               after = [ "network.target" ];
               environment.YOUSABLE_CONFIG = cfg.configFile;
               serviceConfig = {
-                WorkingDirectory = "/tmp/yousable";
+                WorkingDirectory = "/var/lib/yousable";
                 ExecStart =
                   "${self.packages.${system}.yousable}/bin/yousable back";
                 Restart = "on-failure";
