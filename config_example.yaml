@@ -21,8 +21,8 @@ feed_defaults:
 
 feeds:
   AdaDeranaNews:  # random channel with frequent updates, sometimes livestreams
-    url: https://www.youtube.com/c/AdaDeranaNews  # /c/ url
-    extra_urls: [ https://www.youtube.com/c/AdaDeranaNews/live ]
+    url: https://www.youtube.com/c/AdaDeranaNews/videos  # /c/ url
+    extra_urls: [ https://www.youtube.com/c/AdaDeranaNews/streams ]
     poll_seconds: 600
 
 # BlenderStudio:  # slowly updating channel, has subtitles
@@ -32,13 +32,13 @@ feeds:
 # HS:  # used as long livestream example in testing
 #   load_entries: 1
 #   keep_entries: 10
-#   url: https://www.youtube.com/c/Hearthstone
+#   url: https://www.youtube.com/c/Hearthstone/videos
 #   extra_urls: [ https://www.youtube.com/c/Hearthstone/live ]
 #   profiles: [ small, audio ]
 
 # JG:  # has mostly streams
 #   load_entries: 2
-#   url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw
+#   url: https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw/videos
 #   extra_urls:
 #     - https://www.youtube.com/channel/UCWAIvx2yYLK_xTYD4F2mUNw/live
 #     - https://www.youtube.com/playlist?list=UUWAIvx2yYLK_xTYD4F2mUNw
@@ -47,7 +47,7 @@ feeds:
 #     title: Живой Гвоздь  # change feed title
 
 # Kurzgesagt:  # sponsorblock example
-#   url: https://www.youtube.com/user/Kurzgesagt  # /user/ url
+#   url: https://www.youtube.com/user/Kurzgesagt/videos  # /user/ url
 #   load_entries: 1
 #   # cut out sponsor segments reported to Sponsorblock
 #   sponsorblock_remove: [ sponsor ]
