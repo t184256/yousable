@@ -59,6 +59,7 @@ def monitor(config, feed):
 
         yt_dl_options = {
             'quiet': True,
+            'ignoreerrors': True,  # do not crash on private videos
             #'verbose': True,
             'match_filter': yt_dlp.utils.match_filter_func(
                 'live_status != is_upcoming'
@@ -85,11 +86,18 @@ def monitor(config, feed):
                     ids = [x['id'] for x in info['entries']]
                     if ee and 'entries' in ee:
                         for eee in ee['entries']:
-                            if eee['id'] not in ids:
-                                print(f'{feed}: extra n {eee["id"]}',
+                            if eee is None:
+                                print(f'{feed}: skipping a None entry',
                                       file=sys.stderr)
-                                info['entries'].append(eee)
-                    elif ee and ee['id'] not in ids:
+                                continue
+                            if 'id' in eee and eee['id']:
+                                if eee['id'] not in ids:
+                                    print(f'{feed}: extra n {eee["id"]}',
+                                          file=sys.stderr)
+                                    info['entries'].append(eee)
+                            else:
+                                print(f'{feed}: what is {eee}', file=sys.stderr)
+                    elif ee and 'id' in ee and ee['id'] not in ids:
                         print(f'{feed}: extra 1 {ee["id"]}', file=sys.stderr)
                         info['entries'].append(ee)
                     else:
