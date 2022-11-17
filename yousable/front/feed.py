@@ -30,13 +30,19 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
     container = config['profiles'][profile]['container']
     mime = f'{audio_video}/{container}'
 
+    if not 'fulltitle' in e:
+        print(f"SKIPPING {feed_name} {entry_id} {e['webpage_url']}: "
+              "no `fulltitle`", file=sys.stderr)
+        return
+
     fe = fg.add_entry()
     fe.id(e['id'])
-    fe.link({'href': e['original_url']})
+    fe.link({'href': e['original_url'] if 'original_url' in e else
+                     e['webpage_url']})
 
     title = e['fulltitle']
     live_status = e.get('live_status')
-    if live_status and live_status != 'was_live':
+    if live_status and live_status not in ('was_live', 'not_live'):
         live_status = str(live_status).removeprefix('is_')
         title = f'[{live_status} {e["id"][:4]}] {title}'
     fe.title(title)
