@@ -167,8 +167,8 @@ def download(config, feed, entry_pathogen, profile):
     shutil.move(tmp_fname, entry_pathogen('out', profile + '.' + container))
     if sb_cats:
         yousable.sponsorblock.file_write(sb, sb_specific_path)
-    #proctitle('cleaning...')
-    #shutil.rmtree(entry_pathogen('tmp', profile))
+    proctitle('cleaning...')
+    shutil.rmtree(entry_pathogen('tmp', profile))
     l.release()
     proctitle('finished')
     print(f'{pretty_log_name} has finished downloading '
