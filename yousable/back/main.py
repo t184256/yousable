@@ -150,14 +150,13 @@ def monitor(config, feed):
                                           config, feed,
                                           entry_pathogen, profile)
 
-        slp = min(15,
-                  feed_cfg['poll_seconds'] * (1 - random.random() / 100))
+        slp = max(15, feed_cfg['poll_seconds'] * (1 - random.random() / 100))
         proctitle('reaping...')
         time.sleep(15)
         reap()
 
         proctitle()
-        time.sleep(15 - slp)
+        time.sleep(slp - 15)
 
         proctitle('cleaning...')
         c = cleanup(config, feed, feed_pathogen)
