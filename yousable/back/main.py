@@ -217,7 +217,7 @@ def main(config):
     for feed in config['feeds']:
         monitors.append(start_process(f'monitor {feed}', monitor,
                                       config, feed))
-        time.sleep(random.random() * 5)
+        time.sleep(random.random() * 15)
     proctitle('up and running')
     for p in monitors:
         p.join()
