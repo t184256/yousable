@@ -8,14 +8,24 @@
     (flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        yt-dlp = pkgs.python3Packages.yt-dlp.overrideAttrs (oa: {
+          version = "2023.01.06-fixed";
+          patches = [(
+            pkgs.fetchpatch {
+              url = "https://github.com/yt-dlp/yt-dlp/commit/149eb0bbf34fa8fdf8d1e2aa28e17479d099e26b.patch";
+              sha256 = "sha256-NQbMUBd1xZWKJaaNmxY7UhXwiPY0Hnf7hxfzDBjAZH8=";
+            }
+          )];
+        });
         yousable = pkgs.python3Packages.buildPythonPackage {
           pname = "yousable";
           version = "0.0.1";
           src = ./.;
-          propagatedBuildInputs = with pkgs.python3Packages; [
+          propagatedBuildInputs = [
+            yt-dlp
+          ] ++ (with pkgs.python3Packages; [
             flask
             flask-httpauth
-            yt-dlp
             feedgen
             confuse
             requests
@@ -23,7 +33,7 @@
             mutagen
             ffmpeg-python
             setproctitle
-          ] ++ (with pkgs; [
+          ]) ++ (with pkgs; [
             ffmpeg_5-headless
           ]
           );
@@ -80,7 +90,7 @@
               groups.yousable = {};
             };
             systemd.services.yousable-back = {
-              path = [ pkgs.yt-dlp pkgs.ffmpeg_5-headless ];
+              path = [ pkgs.ffmpeg_5-headless ];
               description = "Podcast generator based on yt-dlp: downloader";
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
