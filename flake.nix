@@ -8,22 +8,12 @@
     (flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        yt-dlp = pkgs.python3Packages.yt-dlp.overrideAttrs (oa: {
-          version = "2023.01.06-fixed";
-          patches = [(
-            pkgs.fetchpatch {
-              url = "https://github.com/yt-dlp/yt-dlp/commit/149eb0bbf34fa8fdf8d1e2aa28e17479d099e26b.patch";
-              sha256 = "sha256-NQbMUBd1xZWKJaaNmxY7UhXwiPY0Hnf7hxfzDBjAZH8=";
-            }
-          )];
-        });
         yousable = pkgs.python3Packages.buildPythonPackage {
           pname = "yousable";
           version = "0.0.1";
           src = ./.;
-          propagatedBuildInputs = [
+          propagatedBuildInputs = (with pkgs.python3Packages; [
             yt-dlp
-          ] ++ (with pkgs.python3Packages; [
             flask
             flask-httpauth
             feedgen
@@ -35,8 +25,7 @@
             setproctitle
           ]) ++ (with pkgs; [
             ffmpeg_5-headless
-          ]
-          );
+          ]);
           doCheck = false;
         };
         waitressEnv = pkgs.python3.withPackages (p: with p; [
