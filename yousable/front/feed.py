@@ -135,6 +135,7 @@ def feed(config, profile, feed_name, extra_opts, url_maker):
     for e in feed_info['entries']:
         if e is None:
             print(f'SKIPPING {feed_name}: null entry', file=sys.stderr)
+            continue
         generate_entry(config, profile, feed_name, url_maker, fg, e['id'],
                        lambda d, *r: feed_pathogen(d, e['id'], *r))
 
