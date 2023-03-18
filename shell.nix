@@ -13,6 +13,7 @@ pkgs.mkShell {
       mutagen
       ffmpeg-python
       setproctitle
+      pytz
     ]))
   ];
   nativeBuildInputs = (with pkgs.python3Packages; [

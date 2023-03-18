@@ -24,6 +24,7 @@ setup(
         'mutagen',
         'ffmpeg-python',
         'setproctitle',
+        'pytz',
     ],
     entry_points={
         'console_scripts': [

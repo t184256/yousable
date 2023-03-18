@@ -23,6 +23,7 @@
             mutagen
             ffmpeg-python
             setproctitle
+            pytz
           ]) ++ (with pkgs; [
             ffmpeg_5-headless
           ]);
