@@ -20,6 +20,7 @@ import yousable.front.chapters_extensions
 def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
                    entry_pathogen):
     meta_fname = entry_pathogen('meta', 'entry.json')
+    progressfile = entry_pathogen('tmp', profile, 'progress')
     if not os.path.exists(meta_fname):
         print(f"SKIPPING {feed_name} {entry_id}: no metadata", file=sys.stderr)
         return
@@ -41,10 +42,18 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
                      e['webpage_url']})
 
     title = e['fulltitle']
+    markers = []
     live_status = e.get('live_status')
     if live_status and live_status not in ('was_live', 'not_live'):
         live_status = str(live_status).removeprefix('is_')
-        title = f'[{live_status} {e["id"][:4]}] {title}'
+        markers.extend((live_status, e['id'][:4]))
+    try:
+        with open(progressfile) as f:
+            markers.append(f.read())
+    except FileNotFoundError:
+        pass
+    if markers:
+        title = f'[{"|".join(markers)}] {title}'
     fe.title(title)
 
     description = e['description'] or e['fulltitle']

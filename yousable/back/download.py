@@ -30,7 +30,7 @@ def _add_postprocessor(ydl, pp, **kwargs):
     ydl.add_post_processor(pp(ydl, **kwargs), when='post_process')
 
 
-def make_progress_hook(log_prefix, target_interval=20):
+def make_progress_hook(log_prefix, progressfile, target_interval=20):
     last_reported_time = 0
     progresses, last_reported_progresses = {}, {}
     observed_duration = written_duration = 0
@@ -57,6 +57,10 @@ def make_progress_hook(log_prefix, target_interval=20):
             pretty_progresses = ' '.join(f'{int(x * 100):3}%'
                                          for x in progresses.values())
             print(f'{log_prefix}: {pretty_progresses}', file=sys.stderr)
+            with open(progressfile + '.tmp', 'w') as f:
+                f.write(pretty_progresses)
+            os.rename(progressfile + '.tmp', progressfile)
+            print(f'{log_prefix}: {pretty_progresses}', file=sys.stderr)
             proctitle(pretty_progresses)
             last_reported_progresses = progresses.copy()
             last_reported_time = now
@@ -66,6 +70,7 @@ def make_progress_hook(log_prefix, target_interval=20):
 
 def download(config, feed, entry_pathogen, profile):
     lockfile = entry_pathogen('tmp', profile, 'lock')
+    progressfile = entry_pathogen('tmp', profile, 'progress')
     proctitle('locking...')
     l = fasteners.process_lock.InterProcessLock(lockfile)
     l.acquire()
@@ -111,7 +116,7 @@ def download(config, feed, entry_pathogen, profile):
         'keepfragments': True,
         'skip_unavailable_fragments': False,
         'noprogress': True,
-        'progress_hooks': [make_progress_hook(pretty_log_name)],
+        'progress_hooks': [make_progress_hook(pretty_log_name, progressfile)],
         'outtmpl': 'media',
         'merge_output_format': container,
         'writethumbnail': True,
