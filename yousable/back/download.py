@@ -155,6 +155,10 @@ def download(config, feed, entry_pathogen, profile):
             #r = ydl.download_with_info_file(entry_pathogen('meta', 'entry.json'))
             r = ydl.download(entry_info['original_url'])
             assert r == 0
+    except yt_dlp.utils.UserNotLive as ex:
+        print(f'{feed} {entry_info["id"]} ERROR: {ex}', file=sys.stdout)
+        shutil.rmtree(entry_pathogen('tmp', profile))
+        # suppress
     except yt_dlp.utils.DownloadError as ex:
         print(f'{feed} {entry_info["id"]} ERROR: {ex}', file=sys.stdout)
         shutil.rmtree(entry_pathogen('tmp', profile))
