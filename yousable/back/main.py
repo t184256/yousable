@@ -72,6 +72,7 @@ def monitor(config, feed):
             with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                 info = ydl.extract_info(feed_cfg['url'], download=False)
             info = ydl.sanitize_info(info)
+            assert info
         except Exception as ex:
             print(f'{feed}: ERROR {ex}', file=sys.stderr)
             time.sleep(feed_cfg['poll_seconds'] / 4)
