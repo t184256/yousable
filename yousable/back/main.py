@@ -22,6 +22,7 @@ from yousable.utils import start_process, proctitle, reap
 def stream_then_download(config, feed, entry_info, entry_pathogen,
                          profile, video):
     stream(config, feed, entry_info, entry_pathogen, profile, video)
+    time.sleep(30)
     if _download_enabled(config, profile):
         download(config, feed, entry_pathogen, profile)
 
@@ -218,7 +219,8 @@ def main(config):
     for feed in config['feeds']:
         monitors.append(start_process(f'monitor {feed}', monitor,
                                       config, feed))
-        time.sleep(random.random() * 15)
+        extra_count = len(feed['extra_urls']) if 'extra_urls' in feed else 0
+        time.sleep(random.random() * 15 * (1 + extra_count))
     proctitle('up and running')
     for p in monitors:
         p.join()
