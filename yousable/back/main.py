@@ -22,8 +22,8 @@ from yousable.utils import start_process, proctitle, reap
 def stream_then_download(config, feed, entry_info, entry_pathogen,
                          profile, video):
     stream(config, feed, entry_info, entry_pathogen, profile, video)
-    time.sleep(30)
     if _download_enabled(config, profile):
+        time.sleep(300)
         download(config, feed, entry_pathogen, profile)
 
 

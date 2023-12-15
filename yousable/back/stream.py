@@ -203,7 +203,7 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
             print(pretty_log_name, 'ERROR', type(ex), ex, file=sys.stderr)
             print(pretty_log_name, 'cooling down...', file=sys.stderr)
             proctitle('cooling down...')
-            time.sleep(5)
+            time.sleep(15)
             print(pretty_log_name, 'restarting...', file=sys.stderr)
             proctitle('restarting...')
     print(pretty_log_name, 'done', file=sys.stderr)
