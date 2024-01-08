@@ -153,7 +153,9 @@ def download(config, feed, entry_pathogen, profile):
             print(f'{pretty_log_name} begins downloading', file=sys.stderr)
             # doesn't re-sort formats
             #r = ydl.download_with_info_file(entry_pathogen('meta', 'entry.json'))
-            r = ydl.download(entry_info['original_url'])
+            r = ydl.download(entry_info['original_url']
+                             if 'original_url' in entry_info else
+                             entry_info['webpage_url'])
             assert r == 0
     except yt_dlp.utils.UserNotLive as ex:
         print(f'{feed} {entry_info["id"]} ERROR: {ex}', file=sys.stdout)
