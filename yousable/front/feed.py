@@ -56,7 +56,8 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
         title = f'[{"|".join(markers)}] {title}'
     fe.title(title)
 
-    description = e['description'] or e['fulltitle']
+    description = (e.get('description') or e.get('fulltitle') or
+                   e.get('title') or '-')
     alts = {}
     for _p in config['profiles']:
         _c = config['profiles'][_p]['container']
