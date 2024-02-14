@@ -23,7 +23,7 @@ def stream_then_download(config, feed, entry_info, entry_pathogen,
                          profile, video):
     stream(config, feed, entry_info, entry_pathogen, profile, video)
     if _download_enabled(config, profile):
-        time.sleep(300)
+        time.sleep(900)
         download(config, feed, entry_pathogen, profile)
 
 
