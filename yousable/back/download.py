@@ -2,23 +2,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import json
-import multiprocessing
 import os
 import shutil
 import sys
 import time
 
-import yt_dlp
 import fasteners
+import ffmpeg
+import yt_dlp
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
-from yt_dlp.postprocessor.ffmpeg import FFmpegEmbedSubtitlePP
-from yt_dlp.postprocessor.ffmpeg import FFmpegExtractAudioPP
-from yt_dlp.postprocessor.ffmpeg import FFmpegVideoRemuxerPP
+from yt_dlp.postprocessor.ffmpeg import (
+    FFmpegEmbedSubtitlePP,
+    FFmpegExtractAudioPP,
+    FFmpegVideoRemuxerPP,
+)
 from yt_dlp.postprocessor.modify_chapters import ModifyChaptersPP
 
 import yousable.sponsorblock
 from yousable.sponsorblock import SponsorBlockPPCached
-
 from yousable.utils import proctitle
 
 
@@ -33,7 +34,6 @@ def _add_postprocessor(ydl, pp, **kwargs):
 def make_progress_hook(log_prefix, progressfile, target_interval=20):
     last_reported_time = 0
     progresses, last_reported_progresses = {}, {}
-    observed_duration = written_duration = 0
     def progress_hook(d):
         nonlocal progresses, last_reported_progresses, last_reported_time
         now = time.time()
@@ -68,7 +68,7 @@ def make_progress_hook(log_prefix, progressfile, target_interval=20):
     return progress_hook
 
 
-def download(config, feed, entry_pathogen, profile):
+def download(config, feed, entry_pathogen, profile, retries=7):
     lockfile = entry_pathogen('tmp', profile, 'lock')
     progressfile = entry_pathogen('tmp', profile, 'progress')
     proctitle('locking...')
@@ -110,8 +110,8 @@ def download(config, feed, entry_pathogen, profile):
             return
 
     dl_opts = {
-        'quiet': True,
-        #'verbose': True,
+        #'quiet': True,
+        'verbose': True,
         'keepvideo': True,
         'keepfragments': True,
         'skip_unavailable_fragments': False,
@@ -175,6 +175,20 @@ def download(config, feed, entry_pathogen, profile):
             # some really weird bug where filename gets eaten?
             tmp_fname = entry_pathogen('tmp', profile, 'media')
     assert os.path.exists(tmp_fname)
+    if 'duration' in entry_info:
+        reported_duration = entry_info['duration']
+        real_duration = float(ffmpeg.probe(tmp_fname)['format']['duration'])
+        print(f'{pretty_log_name} {reported_duration=} {real_duration=}')
+        if real_duration < reported_duration * 0.2:
+            shutil.rmtree(entry_pathogen('tmp', profile))
+            l.release()
+            proctitle('short-will-retry...')
+            print(f'{pretty_log_name} too short, sleeping...')
+            time.sleep(90)
+            if retries > 1:
+                print(f'{pretty_log_name} retrying {retries=}')
+                download(config, feed, entry_pathogen, profile,
+                         retries=retries - 1)
     shutil.move(tmp_fname, entry_pathogen('out', profile + '.' + container))
     if sb_cats:
         yousable.sponsorblock.file_write(sb, sb_specific_path)
