@@ -110,8 +110,8 @@ def download(config, feed, entry_pathogen, profile, retries=7):
             return
 
     dl_opts = {
-        #'quiet': True,
-        'verbose': True,
+        'quiet': True,
+        #'verbose': True,
         'keepvideo': True,
         'keepfragments': True,
         'skip_unavailable_fragments': False,
