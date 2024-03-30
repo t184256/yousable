@@ -175,20 +175,19 @@ def download(config, feed, entry_pathogen, profile, retries=7):
             # some really weird bug where filename gets eaten?
             tmp_fname = entry_pathogen('tmp', profile, 'media')
     assert os.path.exists(tmp_fname)
-    if 'duration' in entry_info:
-        reported_duration = entry_info['duration']
-        real_duration = float(ffmpeg.probe(tmp_fname)['format']['duration'])
-        print(f'{pretty_log_name} {reported_duration=} {real_duration=}')
-        if real_duration < reported_duration * 0.2:
-            shutil.rmtree(entry_pathogen('tmp', profile))
-            l.release()
-            proctitle('short-will-retry...')
-            print(f'{pretty_log_name} too short, sleeping...')
-            time.sleep(90)
-            if retries > 1:
-                print(f'{pretty_log_name} retrying {retries=}')
-                download(config, feed, entry_pathogen, profile,
-                         retries=retries - 1)
+    reported_duration = entry_info.get('duration')
+    real_duration = float(ffmpeg.probe(tmp_fname)['format']['duration'])
+    print(f'{pretty_log_name} {reported_duration=} {real_duration=}')
+    if not real_duration or real_duration < reported_duration * 0.4:
+        shutil.rmtree(entry_pathogen('tmp', profile))
+        l.release()
+        delay = 60 + (10 - retries)**3
+        proctitle(f'short-will-retry-{retries}-{delay}s...')
+        print(f'{pretty_log_name} too short, sleeping for {delay}s...')
+        if retries > 1:
+            print(f'{pretty_log_name} retrying retries={retries-1}')
+            download(config, feed, entry_pathogen, profile,
+                     retries=retries - 1)
     shutil.move(tmp_fname, entry_pathogen('out', profile + '.' + container))
     if sb_cats:
         yousable.sponsorblock.file_write(sb, sb_specific_path)
