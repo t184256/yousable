@@ -4,7 +4,6 @@
 import datetime
 import glob
 import json
-import multiprocessing
 import os
 import pytz
 import random
@@ -13,6 +12,7 @@ import sys
 import time
 
 import yt_dlp
+from yt_dlp.postprocessor.metadataparser import MetadataParserPP
 
 from yousable.back.download import download
 from yousable.back.stream import stream
@@ -70,6 +70,15 @@ def monitor(config, feed):
             'playlist_items': f'{feed_cfg["load_entries"]}::-1',
             'extractor_args': {'youtube': {'skip': ['translated_subs']}},
             'retry_sleep_functions': {'http': retry, 'extractor': retry},
+            'postprocessors': [{
+                'key': 'MetadataParser',
+                'when': 'pre_process',
+                'actions': [
+                    (MetadataParserPP.Actions.INTERPRET,
+                     '',
+                     '(?P<automatic_captions>)')
+                ]
+            }],
         }
         print(f'{feed}: refreshing...')
         proctitle('refreshing...')
