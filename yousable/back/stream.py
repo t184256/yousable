@@ -155,6 +155,8 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
     pretty_log_name = (f'{profile}/{"v" if video else "a"}'
                        f' {entry_info["id"]} {entry_info["title"]}')
     pretty_log_name = shorten(pretty_log_name)
+
+    retry = lambda n: min(2 * 2**n, 128)
     dl_opts = {
         'quiet': True,
         #'verbose': True,
@@ -168,6 +170,9 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
             'home': workdir,
         },
         'live_from_start': True,
+        'retry_sleep_functions': {
+            'http': retry, 'extractor': retry, 'fragment': retry,
+        },
         **live_opts,
     }
 

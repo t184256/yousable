@@ -58,6 +58,7 @@ def monitor(config, feed):
         feed_cfg = config['feeds'][feed]
         #print(feed, feed_cfg)
 
+        retry = lambda n: min(2 * 2**n, 128)
         yt_dl_options = {
             'quiet': True,
             'ignoreerrors': True,  # do not crash on private videos
@@ -66,6 +67,7 @@ def monitor(config, feed):
                 'live_status != is_upcoming'
             ),
             'playlist_items': f'{feed_cfg["load_entries"]}::-1'
+            'retry_sleep_functions': {'http': retry, 'extractor': retry},
         }
         print(f'{feed}: refreshing...')
         proctitle('refreshing...')
