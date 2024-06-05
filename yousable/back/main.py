@@ -220,7 +220,7 @@ def main(config):
         monitors.append(start_process(f'monitor {feed}', monitor,
                                       config, feed))
         extra_count = len(feed['extra_urls']) if 'extra_urls' in feed else 0
-        time.sleep(random.random() * 15 * (1 + extra_count))
+        time.sleep(random.random() * 30 * (1 + extra_count))
     proctitle('up and running')
     for p in monitors:
         p.join()
