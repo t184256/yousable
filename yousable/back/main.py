@@ -66,7 +66,9 @@ def monitor(config, feed):
             'match_filter': yt_dlp.utils.match_filter_func(
                 'live_status != is_upcoming'
             ),
-            'playlist_items': f'{feed_cfg["load_entries"]}::-1'
+            'extractor_retries': 5,
+            'playlist_items': f'{feed_cfg["load_entries"]}::-1',
+            'extractor_args': {'youtube': {'skip': ['translated_subs']}},
             'retry_sleep_functions': {'http': retry, 'extractor': retry},
         }
         print(f'{feed}: refreshing...')

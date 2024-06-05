@@ -31,15 +31,15 @@ def generate_entry(config, profile, feed_name, url_maker, fg, entry_id,
     container = config['profiles'][profile]['container']
     mime = f'{audio_video}/{container}'
 
-    if not 'fulltitle' in e:
-        print(f"SKIPPING {feed_name} {entry_id} {e['webpage_url']}: "
+    url = e.get('original_url') or e.get('webpage_url') or e.get('url')
+    if 'fulltitle' not in e:
+        print(f"SKIPPING {feed_name} {entry_id} {url}: "
               "no `fulltitle`", file=sys.stderr)
         return
 
     fe = fg.add_entry()
     fe.id(e['id'])
-    fe.link({'href': e['original_url'] if 'original_url' in e else
-                     e['webpage_url']})
+    fe.link({'href': url})
 
     title = e['fulltitle']
     markers = []

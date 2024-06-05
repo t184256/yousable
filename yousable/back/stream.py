@@ -179,7 +179,9 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
 
     os.makedirs(workdir, exist_ok=True)
 
-    url = entry_info['webpage_url']
+    url = (entry_info.get('original_url') or
+           entry_info.get('webpage_url') or
+           entry_info.get('url'))
     while True:
         for x in glob.glob(os.path.join(workdir, '*-Frag*')):
             os.unlink(x)
