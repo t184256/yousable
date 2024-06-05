@@ -169,6 +169,7 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
             'temp': workdir,
             'home': workdir,
         },
+        'wait_for_video': (30, 120),
         'live_from_start': True,
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
