@@ -12,11 +12,28 @@ import sys
 import time
 
 import yt_dlp
-from yt_dlp.postprocessor.metadataparser import MetadataParserPP
 
 from yousable.back.download import download
 from yousable.back.stream import stream
 from yousable.utils import start_process, proctitle, reap
+
+
+class MyStripPP(yt_dlp.postprocessor.PostProcessor):
+    def run(self, info):
+        """Strip heavy attributes that yousable-front just doesn't use."""
+        if 'automatic_captions' in info:
+            del info['automatic_captions']
+        if 'requested_formats' in info:
+            del info['requested_formats']
+        if 'formats' in info:
+            for fmt in info['formats']:
+                if 'fragments' in fmt:
+                    del fmt['fragments']
+                if 'http_headers' in fmt:
+                    del fmt['http_headers']
+        if 'heatmap' in info:
+            del info['heatmap']  # it's cool tho
+        return [], info
 
 
 def stream_then_download(config, feed, entry_info, entry_pathogen,
@@ -70,20 +87,12 @@ def monitor(config, feed):
             'playlist_items': f'{feed_cfg["load_entries"]}::-1',
             'extractor_args': {'youtube': {'skip': ['translated_subs']}},
             'retry_sleep_functions': {'http': retry, 'extractor': retry},
-            'postprocessors': [{
-                'key': 'MetadataParser',
-                'when': 'pre_process',
-                'actions': [
-                    (MetadataParserPP.Actions.INTERPRET,
-                     '',
-                     '(?P<automatic_captions>)')
-                ]
-            }],
         }
         print(f'{feed}: refreshing...')
         proctitle('refreshing...')
         try:
             with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
+                ydl.add_post_processor(MyStripPP(), when='pre_process')
                 info = ydl.extract_info(feed_cfg['url'], download=False)
             info = ydl.sanitize_info(info)
             assert info
@@ -96,6 +105,7 @@ def monitor(config, feed):
                 print(f'{feed} {len(info["entries"])}: extra url check {extra_url}...')
                 try:
                     with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
+                        ydl.add_post_processor(MyStripPP(), when='pre_process')
                         ee = ydl.extract_info(extra_url, download=False)
                     ee = ydl.sanitize_info(ee)
                     ids = [x['id'] for x in info['entries']]
