@@ -133,6 +133,8 @@ def feed(config, profile, feed_name, extra_opts, url_maker):
     title = get_overrideable('title')
     if title.endswith(' - Videos') and not 'title' in overrides:
         title = title.removesuffix(' - Videos')
+    if title.startswith('Uploads from ') and not 'title' in overrides:
+        title = title.removeprefix('Uploads from ')
     fg.title(title)
     fg.description(get_overrideable('description') or
                    get_overrideable('title'))
