@@ -74,7 +74,7 @@ def crawl_feed(config, feed):
         'retry_sleep_functions': {'http': retry, 'extractor': retry},
     }
     try:
-        sleep(config, f'{feed} pre-crawl 0/{len(extra_urls) + 1}')
+        sleep(config, f'{feed}: pre-crawl 0/{len(extra_urls) + 1}')
         proctitle(f'{feed}: crawl...')
         print(f'{feed}: crawl...', file=sys.stderr)
         with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
@@ -90,7 +90,8 @@ def crawl_feed(config, feed):
         print(f'{feed} {len(info["entries"])}: '
               f'extra url check {extra_url}...', file=sys.stderr)
         try:
-            sleep(config, f'{feed} pre-crawl {extra_i}/{len(extra_urls) + 1}')
+            sleep(config,
+                  f'{feed} pre-crawl {extra_i + 1}/{len(extra_urls) + 1}')
             with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                 ydl.add_post_processor(MyStripPP(), when='pre_process')
                 ee = ydl.extract_info(extra_url, download=False)

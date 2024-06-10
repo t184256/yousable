@@ -67,7 +67,7 @@ def make_progress_hook(log_prefix, progressfile, target_interval=20):
     return progress_hook
 
 
-def download(config, feed, entry_pathogen, profile, retries=7):
+def download(config, feed, entry_pathogen, profile, retries=2):
     progressfile = entry_pathogen('tmp', profile, 'progress')
     start = time.time()
 
@@ -190,16 +190,17 @@ def download(config, feed, entry_pathogen, profile, retries=7):
     assert os.path.exists(tmp_fname)
     reported_duration = entry_info.get('duration')
     real_duration = float(ffmpeg.probe(tmp_fname)['format']['duration'])
-    print(f'{pretty_log_name} {reported_duration=} {real_duration=}')
-    if not real_duration or real_duration < reported_duration * 0.4:
-        shutil.rmtree(entry_pathogen('tmp', profile))
-        delay = 60 + (10 - retries)**3
-        proctitle(f'short-will-retry-{retries}-{delay}s...')
-        print(f'{pretty_log_name} too short, sleeping for {delay}s...')
-        if retries > 1:
-            print(f'{pretty_log_name} retrying retries={retries-1}')
-            download(config, feed, entry_pathogen, profile,
-                     retries=retries - 1)
+    print(f'{pretty_log_name} {reported_duration=} {real_duration=}',
+          file=sys.stderr)
+    if reported_duration:
+        if not real_duration or real_duration < reported_duration * 0.4:
+            shutil.rmtree(entry_pathogen('tmp', profile))
+            print(f'{pretty_log_name} too short, {retries=}', file=sys.stderr)
+            sleep(config, f'{pretty_log_name} short-retry-{retries}')
+            if retries > 1:
+                print(f'{pretty_log_name} retrying retries={retries-1}')
+                download(config, feed, entry_pathogen, profile,
+                         retries=retries - 1)
     shutil.move(tmp_fname, entry_pathogen('out', profile + '.' + container))
     if sb_cats:
         yousable.sponsorblock.file_write(sb, sb_specific_path)

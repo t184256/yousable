@@ -3,7 +3,6 @@
 
 import json
 import os
-import time
 import traceback
 import sys
 
@@ -82,6 +81,9 @@ def download_feed(config, feed_name):
             print(f'skipping {feed_name} {e["id"]}: no metadata')
             continue
 
+        if e.get('live_status') == 'is_upcoming':
+            print(f'skipping {feed_name} {e["id"]}: is upcoming')
+
         for profile in config['profiles']:
             if profile not in feed_cfg['profiles']:
                 continue
@@ -92,15 +94,14 @@ def download_feed(config, feed_name):
 
             try:
                 download(config, feed_name, entry_pathogen, profile, retries=1)
-            except Exception as e:
+            except Exception as ex:
                 proctitle(f'ERROR {status}')
                 print(f'ERROR {status}', file=sys.stderr)
-                traceback.print_exception(e)
+                traceback.print_exception(ex)
                 sleep(config, 'ERROR')
 
     # Mark feed as processed
     os.rename(downloaded_marker_file_tmp, downloaded_marker_file)
-    print('erase')
 
 
 def main(config):
