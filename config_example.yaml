@@ -11,6 +11,10 @@ secrets:
   user1: pbkdf2:sha256:260000$T0zVMOiEkdPU3FtD$30994c8b02a3e818636c3148594ba61aa8fe2086dca6e3c16ced92fb74d166e7
   # ^ `pass1` hashed, use `yousable hash` to generate one
 
+limits:  # low values will get your IP banned!  TODO: 60 + 10
+  throttle_seconds: 5            # sleep for A seconds between the queries...
+  throttle_variance_seconds: 5   # + 0-B seconds for good measure
+
 feed_defaults:
   load_entries: 5              # query only the last L videos from youtube
   keep_entries: 10             # keep at least the last K videos on disk

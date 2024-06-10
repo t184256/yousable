@@ -9,7 +9,6 @@ pkgs.mkShell {
       feedgen
       confuse
       requests
-      fasteners
       mutagen
       ffmpeg-python
       setproctitle

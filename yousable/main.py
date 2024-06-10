@@ -67,6 +67,10 @@ def load_config():
             'meta': confuse.Filename(),
             'x_accel': confuse.Optional(confuse.Filename()),
         },
+        'limits': {
+            'throttle_seconds': int,
+            'throttle_variance_seconds': int,
+        },
         'profiles': confuse.MappingValues({
             'container': confuse.Choice(CONTAINER_CHOICES),
             'video': confuse.Choice([True, False], default=True),
@@ -89,13 +93,23 @@ def load_config():
 def main():
     if len(sys.argv) == 2:
         subcommand = sys.argv[1]
-        if subcommand == 'back':
-            return yousable.back.main.main(load_config())
-        elif subcommand == 'front':
+        if subcommand == 'crawler':
+            return yousable.back.crawler.main(load_config())
+        elif subcommand == 'downloader':
+            return yousable.back.downloader.main(load_config())
+        elif subcommand == 'streamer':
+            return yousable.back.streamer.main(load_config())
+        elif subcommand == 'splitter':
+            return yousable.back.splitter.main(load_config())
+        elif subcommand == 'cleaner':
+            return yousable.back.cleaner.main(load_config())
+        elif subcommand == 'server':
             return yousable.front.main.main()
         elif subcommand == 'hash':
             print(yousable.front.main.hash_password(input('password> ')))
-    print('Usage: yousable {back|front|hash}', file=sys.stderr)
+    print('Usage: yousable '
+          '{crawler|downloader|streamer|splitter|cleaner|server|hash}',
+          file=sys.stderr)
     if not os.getenv('YOUSABLE_CONFIG'):
         print('Config can be supplied with YOUSABLE_CONFIG variable.',
               file=sys.stderr)

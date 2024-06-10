@@ -8,7 +8,6 @@ import os
 import sys
 import time
 
-import fasteners
 import requests
 import yt_dlp.postprocessor.sponsorblock
 
@@ -93,17 +92,11 @@ def is_outdated(sb_prev, sb_new):
 
 def query_cached(video_id, cachepath, max_age=900):
     # one megaoperation. query or use stale if unreacheable + caching in file
-    #print(f'locking {cachepath}', file=sys.stderr)
-    l = fasteners.process_lock.InterProcessLock(cachepath + '.lock')
-    l.acquire()
-    #print(f'locked {cachepath}', file=sys.stderr)
     if os.path.exists(cachepath):
         if os.stat(cachepath).st_mtime > time.time() - max_age:
             print(f'{video_id} reusing fresh enough SponsorBlock data',
                   file=sys.stderr)
             sb = file_read(cachepath)
-            #print(f'unlocked {cachepath} A', file=sys.stderr)
-            l.release()
             return sb
     sb_new = query(video_id, strip=True)
     sb_prev = file_read(cachepath)
@@ -114,13 +107,9 @@ def query_cached(video_id, cachepath, max_age=900):
         # if it was the only one flagged and was consequently unflagged
         print(f'{video_id} reusing stale SponsorBlock data',
               file=sys.stderr)
-        #print(f'unlocked {cachepath} B', file=sys.stderr)
-        l.release()
         return sb_prev  # do not overwrite old result
     print(f'{video_id} writing new SponsorBlock data', file=sys.stderr)
     file_write(sb_new, cachepath)
-    #print(f'unlocked {cachepath} C', file=sys.stderr)
-    l.release()
     return sb_new
 
 

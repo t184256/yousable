@@ -1,17 +1,29 @@
 # SPDX-FileCopyrightText: 2022 Alexander Sosedkin <monk@unboiled.info>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import math
 import multiprocessing
+import random
+import sys
+import time
 
 import setproctitle
 
-
 _proctitlebase = None
+_sleeptimer = None
+_sleepreason = None
+_status = None
 _children = []
 
 
 def proctitle(status=None):
-    global _proctitlebase
+    global _status
+    _status = status
+    _proctitle_update()
+
+
+def _proctitle_update():
+    global _proctitlebase, _sleeptimer, _sleepreason, _status
 
     TRANSLIT = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -30,9 +42,33 @@ def proctitle(status=None):
     s = ['yousable']
     if _proctitlebase:
         s.append(_proctitlebase)
-    if status:
-        s.append(status)
+    if _sleepreason:
+        s.append(_sleepreason)
+    if _sleeptimer:
+        s.append(f'{_sleeptimer}s')
+    if _status:
+        s.append(_status)
     setproctitle.setproctitle(clean_str(': '.join(s)))
+
+
+def sleep(config, sleepreason):
+    _sleep(config['limits']['throttle_seconds'],
+           config['limits']['throttle_variance_seconds'],
+           sleepreason)
+
+
+def _sleep(base, variance, sleepreason):
+    global _sleeptimer, _sleepreason
+    _sleepreason = sleepreason
+    total = int(math.ceil(base + random.random() * variance))
+    print(f'sleeping for {total}s: {sleepreason}...', file=sys.stderr)
+    for i in range(total):
+        #print(f'sleeping for {total - i}s/{total}s: {sleepreason}...',
+        #      file=sys.stderr)
+        time.sleep(1)  # TODO: something less dynamic
+        _sleeptimer = total - i
+        _proctitle_update()
+    _sleeptimer = _sleepreason = None
 
 
 def start_process(name, target, *args):
@@ -40,7 +76,7 @@ def start_process(name, target, *args):
         global _proctitlebase, _children
         _children = []
         _proctitlebase = name
-        proctitle(f'starting...')
+        proctitle('starting...')
         return target(*a)
     p = multiprocessing.Process(target=target_, args=args)
     p.start()
@@ -52,6 +88,6 @@ def reap():
     global _children
     new_children = []
     for p in _children:
-        if p.exitcode == None:
+        if p.exitcode is None:
             new_children.append(p)
     _children = new_children

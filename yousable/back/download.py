@@ -7,7 +7,6 @@ import shutil
 import sys
 import time
 
-import fasteners
 import ffmpeg
 import yt_dlp
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
@@ -20,7 +19,7 @@ from yt_dlp.postprocessor.modify_chapters import ModifyChaptersPP
 
 import yousable.sponsorblock
 from yousable.sponsorblock import SponsorBlockPPCached
-from yousable.utils import proctitle
+from yousable.utils import proctitle, sleep
 
 
 def shorten(s, to=30):
@@ -69,15 +68,16 @@ def make_progress_hook(log_prefix, progressfile, target_interval=20):
 
 
 def download(config, feed, entry_pathogen, profile, retries=7):
-    lockfile = entry_pathogen('tmp', profile, 'lock')
     progressfile = entry_pathogen('tmp', profile, 'progress')
-    proctitle('locking...')
-    l = fasteners.process_lock.InterProcessLock(lockfile)
-    l.acquire()
-    proctitle('locked')
     start = time.time()
-    with open(entry_pathogen('meta', 'entry.json')) as f:
+
+    entry_json = entry_pathogen('meta', 'entry.json')
+    with open(entry_json) as f:
         entry_info = json.load(f)
+
+    if entry_info.get('live_status') == 'is_upcoming':
+        print(f'{feed} {entry_info["id"]}: is upcoming', file=sys.stdout)
+        return
 
     container = config['profiles'][profile]['container']
     audio_only = not config['profiles'][profile]['video']
@@ -153,8 +153,11 @@ def download(config, feed, entry_pathogen, profile, retries=7):
                                    preferredcodec=container)
             if not audio_only:
                 _add_postprocessor(ydl, EmbedThumbnailPP)
-            proctitle('downloading...')
+
+            sleep(config, f'pre-dl {pretty_log_name}')
+            proctitle(f'dl {pretty_log_name}...')
             print(f'{pretty_log_name} begins downloading', file=sys.stderr)
+
             # doesn't re-sort formats
             #r = ydl.download_with_info_file(entry_pathogen('meta', 'entry.json'))
             url = (entry_info.get('original_url') or
@@ -185,7 +188,6 @@ def download(config, feed, entry_pathogen, profile, retries=7):
     print(f'{pretty_log_name} {reported_duration=} {real_duration=}')
     if not real_duration or real_duration < reported_duration * 0.4:
         shutil.rmtree(entry_pathogen('tmp', profile))
-        l.release()
         delay = 60 + (10 - retries)**3
         proctitle(f'short-will-retry-{retries}-{delay}s...')
         print(f'{pretty_log_name} too short, sleeping for {delay}s...')
@@ -198,7 +200,6 @@ def download(config, feed, entry_pathogen, profile, retries=7):
         yousable.sponsorblock.file_write(sb, sb_specific_path)
     proctitle('cleaning...')
     shutil.rmtree(entry_pathogen('tmp', profile))
-    l.release()
     proctitle('finished')
     print(f'{pretty_log_name} has finished downloading '
           f'in {time.time() - start:.1f}s')

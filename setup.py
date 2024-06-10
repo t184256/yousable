@@ -20,7 +20,6 @@ setup(
         'feedgen',
         'requests',
         'confuse',
-        'fasteners',
         'mutagen',
         'ffmpeg-python',
         'setproctitle',
