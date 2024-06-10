@@ -55,7 +55,7 @@ def crawl_feed(config, feed):
 
     extra_urls = feed_cfg.get('extra_urls') or []
 
-    retry = lambda n: min(2 * 2**n, 128)
+    retry = lambda n: min(64 * 2**n, 256)
     yt_dl_options = {
         #'quiet': True,
         'ignoreerrors': True,  # do not crash on private videos
@@ -66,6 +66,11 @@ def crawl_feed(config, feed):
         'extractor_retries': 3,
         'playlist_items': f'{feed_cfg["load_entries"]}::-1',
         'extractor_args': {'youtube': {'skip': ['translated_subs']}},
+        'sleep_interval': config['limits']['throttle_extra_seconds'] / 2,
+        'max_sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
+        'sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
         'retry_sleep_functions': {'http': retry, 'extractor': retry},
     }
     try:

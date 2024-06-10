@@ -109,7 +109,7 @@ def download(config, feed, entry_pathogen, profile, retries=7):
                   file=sys.stderr)
             return
 
-    retry = lambda n: min(2 * 2**n, 128)
+    retry = lambda n: min(64 * 2**n, 256)
     dl_opts = {
         'quiet': True,
         #'verbose': True,
@@ -127,6 +127,11 @@ def download(config, feed, entry_pathogen, profile, retries=7):
             'temp': entry_pathogen('tmp', profile),
             'home': entry_pathogen('tmp', profile),
         },
+        'sleep_interval': config['limits']['throttle_extra_seconds'] / 2,
+        'max_sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
+        'sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },

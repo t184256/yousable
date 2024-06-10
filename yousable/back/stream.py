@@ -156,7 +156,7 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
                        f' {entry_info["id"]} {entry_info["title"]}')
     pretty_log_name = shorten(pretty_log_name)
 
-    retry = lambda n: min(2 * 2**n, 128)
+    retry = lambda n: min(64 * 2**n, 256)
     dl_opts = {
         'quiet': True,
         #'verbose': True,
@@ -171,6 +171,11 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
         },
         'wait_for_video': (30, 120),
         'live_from_start': True,
+        'sleep_interval': config['limits']['throttle_extra_seconds'] / 2,
+        'max_sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
+        'sleep_interval_requests':
+            config['limits']['throttle_extra_seconds'],
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },
