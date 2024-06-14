@@ -75,8 +75,9 @@ def download(config, feed, entry_pathogen, profile, retries=2):
     with open(entry_json) as f:
         entry_info = json.load(f)
 
-    if entry_info.get('live_status') == 'is_upcoming':
-        print(f'{feed} {entry_info["id"]}: is upcoming', file=sys.stdout)
+    live_status = entry_info.get('live_status')
+    if live_status in ('is_upcoming', 'is_live'):
+        print(f'{feed} {entry_info["id"]}: {live_status=}', file=sys.stdout)
         return
 
     container = config['profiles'][profile]['container']
