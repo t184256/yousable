@@ -4,6 +4,7 @@
 import datetime
 import json
 import os
+import pathlib
 import pytz
 import time
 import sys
@@ -146,9 +147,7 @@ def crawl_feed(config, feed):
             with open(entry_pathogen('meta', 'first_seen'), 'w'):
                 pass
 
-    if not os.path.exists(refresh_marker_file):
-        with open(refresh_marker_file, 'w'):
-            pass
+    pathlib.Path(refresh_marker_file).touch()
 
     print(f'{feed} {len(info["entries"])}: refreshed.', file=sys.stderr)
     proctitle(f'{feed} refreshed')
