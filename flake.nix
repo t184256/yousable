@@ -125,7 +125,7 @@
               };
               yousable-downloader = lib.mkIf cfg.downloader.enable {
                 path = [ pkgs.ffmpeg_7-headless ];
-                description = "Podcast generator based on yt-dlp: crawler";
+                description = "Podcast generator based on yt-dlp: downloader";
                 wantedBy = [ "multi-user.target" ];
                 after = [ "network.target" ];
                 environment.YOUSABLE_CONFIG = cfg.configFile;
