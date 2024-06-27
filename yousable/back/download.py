@@ -181,6 +181,10 @@ def download(config, feed, entry_pathogen, profile, retries=2):
         raise
 
     proctitle('moving...')
+    with open(progressfile + '.tmp', 'w') as f:
+        f.write('moving...')
+    os.rename(progressfile + '.tmp', progressfile)
+
     tmp_fname = entry_pathogen('tmp', profile, 'media.' + container)
     if not os.path.exists(tmp_fname):
         # some really weird bug where extension gets eaten?
