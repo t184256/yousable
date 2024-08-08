@@ -4,56 +4,103 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs";
 
-  outputs = { self, nixpkgs, flake-utils }:
-    (flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        yousable = pkgs.python3Packages.buildPythonPackage {
+  outputs = { self, nixpkgs, flake-utils }@inputs:
+    let
+      pyDeps = pyPackages: with pyPackages; [
+        yt-dlp
+        flask
+        flask-httpauth
+        feedgen
+        confuse
+        requests
+        mutagen
+        ffmpeg-python
+        setproctitle
+        pytz
+      ];
+
+      nativeDeps = pkgs: with pkgs; [
+        ffmpeg_7-headless
+      ];
+
+      yousable-package = {pkgs, python3Packages}:
+        python3Packages.buildPythonPackage {
           pname = "yousable";
           version = "0.0.1";
           src = ./.;
-          propagatedBuildInputs = (with pkgs.python3Packages; [
-            yt-dlp
-            flask
-            flask-httpauth
-            feedgen
-            confuse
-            requests
-            mutagen
-            ffmpeg-python
-            setproctitle
-            pytz
-          ]) ++ (with pkgs; [
-            ffmpeg_7-headless
-          ]);
+          propagatedBuildInputs = (pyDeps python3Packages) ++ (nativeDeps pkgs);
           doCheck = false;
         };
-        waitressEnv = pkgs.python3.withPackages (p: with p; [
-          waitress yousable
-        ]);
-        app = flake-utils.lib.mkApp { drv = yousable; };
-      in
+
+      overlay-yousable = final: prev: {
+        pythonPackagesExtensions =
+          prev.pythonPackagesExtensions ++ [(pyFinal: pyPrev: {
+            yousable = final.callPackage yousable-package {
+              python3Packages = pyFinal;
+            };
+          })];
+      };
+
+      overlay-all = nixpkgs.lib.composeManyExtensions [
+        overlay-yousable
+      ];
+
+    in
+
+      flake-utils.lib.eachDefaultSystem (system:
+        let
+          pkgs = import nixpkgs { inherit system; overlays = [ overlay-all ]; };
+          defaultPython3Packages = pkgs.python3Packages;
+
+          yousable = defaultPython3Packages.yousable;
+          app = flake-utils.lib.mkApp {
+            drv = yousable;
+            exePath = "/bin/yousable";
+          };
+        in
+        {
+          devShells.default = pkgs.mkShell {
+            buildInputs = [(defaultPython3Packages.python.withPackages pyDeps)];
+            nativeBuildInputs = [(pkgs.buildEnv {
+              name = "yousable-env";
+              pathsToLink = [ "/bin" ];
+              paths = nativeDeps pkgs;
+            })];
+          };
+          packages.yousable = yousable;
+          packages.default = yousable;
+          apps.yousable = app;
+          apps.default = app;
+        }
+
+    ) // (
+
       {
-        packages.yousable = yousable;
-        packages.waitressEnv = waitressEnv;
-        defaultPackage = yousable;
-        apps.yousable = app;
-        defaultApp = app;
-        devShell = import ./shell.nix { inherit pkgs; };
+        overlays.yousable = overlay-yousable;
+        overlays.default = overlay-all;
       }
-    )) // (
+
+    ) // (
     let
       nixosModule = { config, lib, pkgs, ... }:
         let
           inherit (pkgs) system;
           cfg = config.services.yousable;
-          bin_yousable = "${self.packages.${system}.yousable}/bin/yousable";
+          bin_yousable = "${cfg.package}/bin/yousable";
+          waitressEnv = pkgs.python3.withPackages (p: with p; [
+            waitress cfg.package
+          ]);
         in {
           options.services.yousable = {
             enable = lib.mkOption {
               description = "Enable yousable in general";
               type = lib.types.bool;
               default = false;
+            };
+            package = lib.mkOption {
+              description = "yousable package to use";
+              type = lib.types.package;
+              default = self.packages.${system}.yousable;
             };
             crawler.enable = lib.mkOption {
               description = "Enable yousable crawler service";
@@ -147,7 +194,7 @@
                 environment.YOUSABLE_CONFIG = cfg.configFile;
                 serviceConfig = {
                   ExecStart = lib.escapeShellArgs [
-                    "${self.packages.${system}.waitressEnv}/bin/waitress-serve"
+                    "${waitressEnv}/bin/waitress-serve"
                     "--threads" "12"
                     "--listen"
                     "${cfg.server.address}:${builtins.toString cfg.server.port}"
