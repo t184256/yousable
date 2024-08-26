@@ -6,12 +6,14 @@ import json
 import os
 import pathlib
 import pytz
-import time
+import random
 import sys
+import time
 
 import yt_dlp
 
 from yousable.utils import sleep, proctitle
+from yousable.back.rss_timestamp import latest_timestamp_of_feeds
 
 
 class MyStripPP(yt_dlp.postprocessor.PostProcessor):
@@ -38,6 +40,38 @@ def _write_json(path, data):
     os.rename(path + '.new', path)
 
 
+def feed_overduedness(config, feed, now):
+    def feed_pathogen(d, *r):
+        return os.path.join(config['paths'][d], feed, *r)
+
+    feed_cfg = config['feeds'][feed]
+
+    # Is it time to check it already?
+    checked_marker_file = feed_pathogen('meta', 'checked')
+    if os.path.exists(checked_marker_file):
+        t = os.stat(checked_marker_file).st_mtime
+        next_check = feed_cfg['poll_seconds'] + t
+        return now - next_check
+    return float('inf')
+
+
+def most_overdue_feeds(config, top=5):
+    t = time.time()
+    d = {feed: feed_overduedness(config, feed, t) for feed in config['feeds']}
+    d = {feed: overduedness for feed, overduedness in d.items()
+         if overduedness > 0}
+    if d:
+        lo = len(d)
+        d = dict(sorted(d.items(), key=lambda a: -a[1])[:top])
+        print(f'{lo} feeds are overdue. Top {len(d)} overdue feeds:',
+              file=sys.stderr)
+        for feed, overduedness in d.items():
+            print(f'{overduedness:7.1f}s {feed}', file=sys.stderr)
+    else:
+        print('all caught up', file=sys.stderr)
+    return d
+
+
 def crawl_feed(config, feed):
     def feed_pathogen(d, *r):
         return os.path.join(config['paths'][d], feed, *r)
@@ -45,14 +79,34 @@ def crawl_feed(config, feed):
     feed_cfg = config['feeds'][feed]
     #print(feed, feed_cfg)
 
-    # Is it time to refresh it already?
-    refresh_marker_file = feed_pathogen('meta', 'refreshed')
-    if os.path.exists(refresh_marker_file):
-        t = os.stat(refresh_marker_file).st_mtime
-        next_refresh = feed_cfg['poll_seconds'] + t
-        if next_refresh > time.time():
-            print(f'skipping {feed}: too early to refresh', file=sys.stderr)
+    # Is it time to check it already?
+    checked_marker_file = feed_pathogen('meta', 'checked')
+    if os.path.exists(checked_marker_file):
+        t = os.stat(checked_marker_file).st_mtime
+        next_check = feed_cfg['poll_seconds'] + t
+        if next_check > time.time():
+            print(f'skipping {feed}: too early to check', file=sys.stderr)
+            print('THIS SHOULD NEVER HAPPEN')
+            raise RuntimeError('something is wrong with checked markers')
+
+    ts_new = ts_prev = None
+    if 'poll_rss_urls' in feed_cfg and feed_cfg['poll_rss_urls']:
+        rss_timestamp_file = feed_pathogen('meta', 'rss_timestamp')
+        if os.path.exists(rss_timestamp_file):
+            with open(rss_timestamp_file) as f:
+                ts_prev = f.read()
+        sleep(config, f'{feed}: pre-RSS')
+        ts_new = str(latest_timestamp_of_feeds(feed_cfg['poll_rss_urls']))
+        if ts_prev == ts_new:
+            print(f'skipping {feed}: RSS timestamp is still {ts_new}',
+                  file=sys.stderr)
+            pathlib.Path(checked_marker_file).touch()
             return
+        else:
+            print(f'RSS timestamp: was {ts_prev}, is {ts_new}',
+                  file=sys.stderr)
+    else:
+        print('no RSS urls configured, polling will be slow!', file=sys.stderr)
 
     extra_urls = feed_cfg.get('extra_urls') or []
 
@@ -147,7 +201,12 @@ def crawl_feed(config, feed):
             with open(entry_pathogen('meta', 'first_seen'), 'w'):
                 pass
 
-    pathlib.Path(refresh_marker_file).touch()
+    if ts_new is not None:
+        with open(rss_timestamp_file, 'w') as f:
+            f.write(ts_new)
+    pathlib.Path(checked_marker_file).touch()
+    refreshed_marker_file = feed_pathogen('meta', 'refreshed')
+    pathlib.Path(refreshed_marker_file).touch()
 
     print(f'{feed} {len(info["entries"])}: refreshed.', file=sys.stderr)
     proctitle(f'{feed} refreshed')
@@ -156,6 +215,9 @@ def crawl_feed(config, feed):
 def main(config):
     proctitle('spinning up...')
     while True:
-        for feed in config['feeds']:
-            crawl_feed(config, feed)
-        sleep(config, 'just chilling')
+        most_overdue = list(most_overdue_feeds(config, top=5).keys())
+        if most_overdue:
+            picked_feed = random.choice(most_overdue)
+            crawl_feed(config, picked_feed)
+        else:
+            sleep(config, 'just chilling')

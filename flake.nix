@@ -11,6 +11,7 @@
         flask
         flask-httpauth
         feedgen
+        feedparser
         confuse
         requests
         mutagen

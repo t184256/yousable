@@ -27,8 +27,11 @@ feed_defaults:
 feeds:
   AdaDeranaNews:  # random channel with frequent updates, sometimes livestreams
     url: https://www.youtube.com/c/AdaDeranaNews/videos  # /c/ url
-    extra_urls: [ https://www.youtube.com/c/AdaDeranaNews/streams ]
-    poll_seconds: 600
+    #extra_urls: [ https://www.youtube.com/c/AdaDeranaNews/streams ]
+    poll_rss_urls:  # make polling lighter, just check timestamps in RSS feed
+    - https://www.youtube.com/feeds/videos.xml?channel_id=UCCK3OZi788Ok44K97WAhLKQ
+    poll_seconds: 30
+    load_entries: 1
 
 # BlenderStudio:  # slowly updating channel, has subtitles
 #   url: https://youtube.com/channel/UCz75RVbH8q2jdBJ4SnwuZZQ  # /channel/ url

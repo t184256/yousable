@@ -42,6 +42,7 @@ def load_config():
     config_template_feed = {
         'url': str,
         'extra_urls': confuse.Optional(confuse.Sequence(str)),
+        'poll_rss_urls': confuse.Optional(confuse.Sequence(str)),
         'load_entries': confuse.Optional(feed_defaults['load_entries']),
         'keep_entries': confuse.Optional(feed_defaults['keep_entries']),
         'keep_entries_seconds': \
