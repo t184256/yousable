@@ -4,6 +4,7 @@
 import json
 import os
 import traceback
+import random
 import sys
 
 from yousable.back.download import download
@@ -107,7 +108,8 @@ def download_feed(config, feed_name):
 def main(config):
     proctitle('spinning up...')
     while True:
-        for feed in config['feeds']:
+        feeds = list(config['feeds'])
+        for feed in random.sample(feeds, k=len(feeds)):
             download_feed(config, feed)
             proctitle()
         sleep(config, 'just chilling')
