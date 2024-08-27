@@ -11,6 +11,10 @@ from yousable.back.download import download
 from yousable.utils import sleep, proctitle
 
 
+def shuffled(container):
+    return random.sample(container, k=len(container))
+
+
 def _entry_ts(feed_pathogen, feed, entry_id):
     try:
         with open(feed_pathogen('meta', entry_id, 'entry.json')) as f:
@@ -69,7 +73,7 @@ def download_feed(config, feed_name):
     # Download stuff
 
     entries = feed_info['entries']
-    for i, e in enumerate(entries):
+    for i, e in enumerate(shuffled(entries)):
         if e is None:
             print(f'SKIPPING {feed_name}: null entry', file=sys.stderr)
             continue
@@ -109,7 +113,7 @@ def main(config):
     proctitle('spinning up...')
     while True:
         feeds = list(config['feeds'])
-        for feed in random.sample(feeds, k=len(feeds)):
+        for feed in shuffled(feeds):
             download_feed(config, feed)
             proctitle()
         sleep(config, 'just chilling')
