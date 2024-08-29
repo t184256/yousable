@@ -103,7 +103,7 @@ def download_feed(config, feed_name):
                 proctitle(f'ERROR {status}')
                 print(f'ERROR {status}', file=sys.stderr)
                 traceback.print_exception(ex)
-                sleep(config, 'ERROR')
+                sleep('ERROR', config=config)
 
     # Mark feed as processed
     os.rename(downloaded_marker_file_tmp, downloaded_marker_file)
@@ -116,4 +116,4 @@ def main(config):
         for feed in shuffled(feeds):
             download_feed(config, feed)
             proctitle()
-        sleep(config, 'just chilling')
+        sleep('just chilling', config=config)

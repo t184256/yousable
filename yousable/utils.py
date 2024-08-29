@@ -51,10 +51,16 @@ def _proctitle_update():
     setproctitle.setproctitle(clean_str(': '.join(s)))
 
 
-def sleep(config, sleepreason):
-    _sleep(config['limits']['throttle_seconds'],
-           config['limits']['throttle_variance_seconds'],
-           sleepreason)
+def sleep(sleepreason, config=None, base_sec=None, variance_sec=None):
+    base_sec = (
+        base_sec if base_sec is not None else
+        config['limits']['throttle_seconds']
+    )
+    variance_sec = (
+        variance_sec if variance_sec is not None else
+        config['limits']['throttle_variance_seconds']
+    )
+    _sleep(base_sec, variance_sec, sleepreason)
 
 
 def _sleep(base, variance, sleepreason):

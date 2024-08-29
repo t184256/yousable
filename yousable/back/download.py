@@ -160,7 +160,7 @@ def download(config, feed, entry_pathogen, profile, retries=2):
             if not audio_only:
                 _add_postprocessor(ydl, EmbedThumbnailPP)
 
-            sleep(config, f'pre-dl {pretty_log_name}')
+            sleep(f'pre-dl {pretty_log_name}', config=config)
             proctitle(f'dl {pretty_log_name}...')
             print(f'{pretty_log_name} begins downloading', file=sys.stderr)
 
@@ -201,7 +201,7 @@ def download(config, feed, entry_pathogen, profile, retries=2):
         if not real_duration or real_duration < reported_duration * 0.4:
             shutil.rmtree(entry_pathogen('tmp', profile))
             print(f'{pretty_log_name} too short, {retries=}', file=sys.stderr)
-            sleep(config, f'{pretty_log_name} short-retry-{retries}')
+            sleep(f'{pretty_log_name} short-retry-{retries}', config=config)
             if retries > 1:
                 print(f'{pretty_log_name} retrying retries={retries-1}')
                 download(config, feed, entry_pathogen, profile,

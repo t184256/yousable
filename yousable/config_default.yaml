@@ -11,6 +11,13 @@ feed_defaults:
   sponsorblock_remove: []
   profiles: [ default ]
 
+limits:  # low values will get your IP banned!
+  throttle_seconds: 300          # sleep for A seconds between the queries...
+  throttle_variance_seconds: 30  # + 0--B seconds for good measure
+  throttle_extra_seconds: 5      # + C/2--C seconds as a failsafe
+                                 #   in-between individual requests
+  throttle_rss_seconds: 30       # sleep for D seconds between RSS queries
+
 paths:
   tmp: /tmp/yousable/tmp
   out: /tmp/yousable/out

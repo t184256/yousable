@@ -95,7 +95,8 @@ def crawl_feed(config, feed):
         if os.path.exists(rss_timestamp_file):
             with open(rss_timestamp_file) as f:
                 ts_prev = f.read()
-        sleep(config, f'{feed}: pre-RSS')
+        sleep(f'{feed}: pre-RSS', variance_sec=0,
+              base_sec=config['limits']['throttle_rss_seconds'])
         ts_new = str(latest_timestamp_of_feeds(feed_cfg['poll_rss_urls']))
         if ts_prev == ts_new:
             print(f'skipping {feed}: RSS timestamp is still {ts_new}',
@@ -129,7 +130,7 @@ def crawl_feed(config, feed):
         'retry_sleep_functions': {'http': retry, 'extractor': retry},
     }
     try:
-        sleep(config, f'{feed}: pre-crawl 0/{len(extra_urls) + 1}')
+        sleep(f'{feed}: pre-crawl 0/{len(extra_urls) + 1}', config=config)
         proctitle(f'{feed}: crawl...')
         print(f'{feed}: crawl...', file=sys.stderr)
         with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
@@ -139,14 +140,14 @@ def crawl_feed(config, feed):
         assert info
     except Exception as ex:
         print(f'{feed}: ERROR {ex}', file=sys.stderr)
-        sleep(config, f'{feed}: ERROR')
+        sleep(f'{feed}: ERROR', config=config)
 
     for extra_i, extra_url in enumerate(extra_urls):
         print(f'{feed} {len(info["entries"])}: '
               f'extra url check {extra_url}...', file=sys.stderr)
         try:
-            sleep(config,
-                  f'{feed} pre-crawl {extra_i + 1}/{len(extra_urls) + 1}')
+            sleep(f'{feed} pre-crawl {extra_i + 1}/{len(extra_urls) + 1}',
+                  config=config)
             with yt_dlp.YoutubeDL(yt_dl_options) as ydl:
                 ydl.add_post_processor(MyStripPP(), when='pre_process')
                 ee = ydl.extract_info(extra_url, download=False)
@@ -220,4 +221,4 @@ def main(config):
             picked_feed = random.choice(most_overdue)
             crawl_feed(config, picked_feed)
         else:
-            sleep(config, 'just chilling')
+            sleep('just chilling', config=config)

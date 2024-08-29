@@ -72,6 +72,7 @@ def load_config():
             'throttle_seconds': int,
             'throttle_variance_seconds': int,
             'throttle_extra_seconds': int,
+            'throttle_rss_seconds': int,
         },
         'profiles': confuse.MappingValues({
             'container': confuse.Choice(CONTAINER_CHOICES),
