@@ -183,6 +183,7 @@ def crawl_feed(config, feed):
     for entry_info in info['entries']:
         if entry_info is None:
             print('SKIPPING None', file=sys.stderr)
+            continue
         if (entry_info.get('upload_date') and
                 entry_info.get('live_status')
                 not in ('is_live', 'is_upcoming')):
