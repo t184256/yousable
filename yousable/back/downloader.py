@@ -9,11 +9,36 @@ import time
 import traceback
 
 from yousable.back.download import download
-from yousable.utils import proctitle, sleep
+from yousable.back.stream import stream
+from yousable.utils import start_process, proctitle, sleep
 
 
 def shuffled(container):
     return random.sample(container, k=len(container))
+
+
+def _live_enabled(lg, config, profile):
+    if not config['paths']['live']:
+        print(f'{lg}: skipping, live path unset', file=sys.stderr)
+        return False
+    if config['profiles'][profile]['live'] is None:
+        print(f'{lg}: skipping, profile has no live preset', file=sys.stderr)
+        return False
+    return True
+
+
+def _download_enabled(config, profile):
+    if config['profiles'][profile]['download'] is None:
+        return False
+    return True
+
+
+def stream_then_download(config, feed, entry_info, entry_pathogen,
+                         profile, video):
+    stream(config, feed, entry_info, entry_pathogen, profile, video)
+    if _download_enabled(config, profile):
+        time.sleep(900)
+        download(config, feed, entry_pathogen, profile)
 
 
 def _entry_ts(feed_pathogen, feed, entry_id):
@@ -100,7 +125,17 @@ def download_feed(config, feed_name):
             print(f'checking {status}', file=sys.stderr)
 
             try:
-                download(config, feed_name, entry_pathogen, profile, retries=1)
+                if e.get('live_status') == 'is_live':
+                    if _live_enabled(status, config, profile):
+                        video = config['profiles'][profile]['video']
+                        start_process(f('stream_then_dl {e["id"]} {profile}'),
+                                      stream_then_download,
+                                      config, feed_name,
+                                      e, entry_pathogen,
+                                      profile, video)
+                else:
+                    download(config, feed_name, entry_pathogen, profile,
+                             retries=1)
             except Exception as ex:
                 proctitle(f'ERROR {status}')
                 print(f'ERROR {status}', file=sys.stderr)

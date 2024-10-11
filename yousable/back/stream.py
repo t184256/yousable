@@ -11,7 +11,6 @@ import time
 
 import yt_dlp
 import ffmpeg
-import fasteners
 
 from yousable.utils import start_process, proctitle
 
@@ -114,7 +113,8 @@ def make_progress_hook(log_prefix, target_interval=60):
     return progress_hook
 
 
-def intermerger(log_prefix, dirs, outbasename, outext, slice_duration,
+def intermerger(log_prefix, pseudolockfile,
+                dirs, outbasename, outext, slice_duration,
                 its_over_event, audio_only=False):
     observed_duration = written_duration = 0
 
@@ -133,6 +133,8 @@ def intermerger(log_prefix, dirs, outbasename, outext, slice_duration,
             return
 
         if observed_duration > written_duration + slice_duration:
+            with open(pseudolockfile, 'w') as f:
+                f.write('')
             written_duration = \
                 slice_and_merge_intermediate(infiles, outbasename, outext,
                                              observed_duration, slice_duration,
@@ -226,24 +228,35 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
 def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     pretty_log_name = f'{profile}/s {entry_info["id"]} {entry_info["title"]}'
     pretty_log_name = shorten(pretty_log_name)
+    slice_seconds = config['feeds'][feed]['live_slice_seconds']
+    dir_ = os.path.join(config['paths']['live'], profile, feed)
 
-    lockfile = entry_pathogen('tmp', profile, 'lock')
-    print(f'{pretty_log_name}: {lockfile}...', file=sys.stderr)
-    proctitle('locking...')
-    l = fasteners.process_lock.InterProcessLock(lockfile)
-    l.acquire()
-    print(f'{pretty_log_name}: {lockfile} acquired.', file=sys.stderr)
-    proctitle('locked')
+    pseudolockfile = entry_pathogen('meta', f'pseudolock-{profile}')  # tmp?
+    print(f'{pretty_log_name}: {pseudolockfile}...', file=sys.stderr)
+    proctitle('waiting for pseudolock...')
+    while True:
+        print(os.path.exists(pseudolockfile))
+        if not os.path.exists(pseudolockfile):
+            break
+        t = os.stat(pseudolockfile).st_mtime
+        print(time.time() - t)
+        if time.time() - t > slice_seconds * 2 + 5:
+            print('pseudolockfile got too old')
+            break
+        time.sleep(10)
+    proctitle('pseudolocking...')
+    with open(pseudolockfile, 'w') as f:
+        f.write('')
+    print(f'{pretty_log_name}: {pseudolockfile} acquired.', file=sys.stderr)
+    proctitle('pseudolocked')
     start = time.time()
 
     fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}'
-    dir_ = os.path.join(config['paths']['live'], profile, feed)
     outbasename = os.path.join(dir_, fname)
     outext = config['profiles'][profile]['container']
     dir_audio = entry_pathogen('tmp', profile, 'audio')
     dir_video = entry_pathogen('tmp', profile, 'video')
     merge_dirs = [dir_video, dir_audio] if video else [dir_audio]
-    slice_seconds = config['feeds'][feed]['live_slice_seconds']
 
     os.makedirs(dir_, exist_ok=True)
     if video:
@@ -262,7 +275,8 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     signal.signal(signal.SIGUSR1, debug_handler)  # debug
     intermerger_p = start_process(
             f'stream/slice {entry_info["id"]}', intermerger,
-            pretty_log_name, merge_dirs, outbasename, outext,
+            pretty_log_name, pseudolockfile,
+            merge_dirs, outbasename, outext,
             slice_seconds, its_over_event, not video
     )
 
@@ -290,7 +304,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     slice_and_merge_final(infiles, outbasename, outext, observed_duration,
                           slice_seconds, audio_only=(not video))
 
-    l.release()
+    os.unlink(pseudolockfile)
     print(f'{pretty_log_name} has finished livestreaming '
           f'in {time.time() - start:.1f}s')
     proctitle('done')
