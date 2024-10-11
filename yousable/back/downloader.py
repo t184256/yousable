@@ -89,6 +89,7 @@ def download_feed(config, feed_name):
 
         if e.get('live_status') == 'is_upcoming':
             print(f'skipping {feed_name} {e["id"]}: is upcoming')
+            continue
 
         for profile in config['profiles']:
             if profile not in feed_cfg['profiles']:
