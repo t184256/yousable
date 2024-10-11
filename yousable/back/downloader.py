@@ -128,7 +128,7 @@ def download_feed(config, feed_name):
                 if e.get('live_status') == 'is_live':
                     if _live_enabled(status, config, profile):
                         video = config['profiles'][profile]['video']
-                        start_process(f('stream_then_dl {e["id"]} {profile}'),
+                        start_process(f'stream_then_dl {e["id"]} {profile}',
                                       stream_then_download,
                                       config, feed_name,
                                       e, entry_pathogen,

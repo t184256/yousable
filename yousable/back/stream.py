@@ -124,7 +124,7 @@ def intermerger(log_prefix, pseudolockfile,
         fds = [fd for fd in fds if fd is not None]
         infiles = [f for f, d in fds]
         durations = [d for f, d in fds]
-        observed_duration = min(durations)
+        observed_duration = min(durations) if durations else 0
         if len(durations) < len(dirs):
             msg = (f'{written_duration}s of '
                    f'{"+".join(str(d) for d in durations)}+???s')
@@ -134,7 +134,7 @@ def intermerger(log_prefix, pseudolockfile,
 
         if observed_duration > written_duration + slice_duration:
             with open(pseudolockfile, 'w') as f:
-                f.write('')
+                f.write(str(time.time()))
             written_duration = \
                 slice_and_merge_intermediate(infiles, outbasename, outext,
                                              observed_duration, slice_duration,
@@ -233,22 +233,22 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
 
     pseudolockfile = entry_pathogen('meta', f'pseudolock-{profile}')  # tmp?
     print(f'{pretty_log_name}: {pseudolockfile}...', file=sys.stderr)
-    proctitle('waiting for pseudolock...')
     while True:
-        print(os.path.exists(pseudolockfile))
+        proctitle('waiting for pseudolock...', file=sys.stderr)
         if not os.path.exists(pseudolockfile):
             break
         t = os.stat(pseudolockfile).st_mtime
-        print(time.time() - t)
+        proctitle('waiting for pseudolock to free up...')
+        print(f'pseudolock age: {time.time() - t}s', file=sys.stderr)
         if time.time() - t > slice_seconds * 2 + 5:
-            print('pseudolockfile got too old')
+            print('pseudolockfile got too old', file=sys.stderr)
             break
         time.sleep(10)
-    proctitle('pseudolocking...')
+    proctitle('pseudolocking...', file=sys.stderr)
     with open(pseudolockfile, 'w') as f:
-        f.write('')
-    print(f'{pretty_log_name}: {pseudolockfile} acquired.', file=sys.stderr)
+        f.write(str(time.time()))
     proctitle('pseudolocked')
+    print(f'{pretty_log_name}: {pseudolockfile} acquired.', file=sys.stderr)
     start = time.time()
 
     fname = f'{entry_info["upload_date"][4:]}.{entry_info["id"][:4]}'
@@ -300,7 +300,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     assert fds
     infiles = [f for f, d in fds]
     durations = [d for f, d in fds]
-    observed_duration = min(durations)
+    observed_duration = min(durations) if durations else 0
     slice_and_merge_final(infiles, outbasename, outext, observed_duration,
                           slice_seconds, audio_only=(not video))
 
