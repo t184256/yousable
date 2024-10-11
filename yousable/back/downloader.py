@@ -3,12 +3,13 @@
 
 import json
 import os
-import traceback
 import random
 import sys
+import time
+import traceback
 
 from yousable.back.download import download
-from yousable.utils import sleep, proctitle
+from yousable.utils import proctitle, sleep
 
 
 def shuffled(container):
@@ -49,17 +50,17 @@ def download_feed(config, feed_name):
 
     # Is it time to refresh already?
 
-    #refreshed_marker_file = feed_pathogen('meta', 'refreshed')
+    refreshed_marker_file = feed_pathogen('meta', 'refreshed')
     downloaded_marker_file = feed_pathogen('meta', 'downloaded')
-    #if (os.path.exists(refreshed_marker_file) and
-    #        os.path.exists(downloaded_marker_file)):
-    #    tr = os.stat(refreshed_marker_file).st_mtime
-    #    td = os.stat(downloaded_marker_file).st_mtime
-    #    if td > tr:  # TODO: could be even stricter with change detection?
-    #        print(f'skipping {feed_name}: '
-    #              f'no updates for {int(time.time() - tr)}s',
-    #              file=sys.stderr)
-    #        return
+    if (os.path.exists(refreshed_marker_file) and
+            os.path.exists(downloaded_marker_file)):
+        tr = os.stat(refreshed_marker_file).st_mtime
+        td = os.stat(downloaded_marker_file).st_mtime
+        if td > tr:  # TODO: could be even stricter with change detection?
+            print(f'skipping {feed_name}: '
+                  f'no updates for {int(time.time() - tr)}s',
+                  file=sys.stderr)
+            return
 
     downloaded_marker_file_tmp = feed_pathogen('meta', 'downloaded.tmp')
     with open(downloaded_marker_file_tmp, 'w'):
