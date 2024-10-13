@@ -234,7 +234,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
     pseudolockfile = entry_pathogen('meta', f'pseudolock-{profile}')  # tmp?
     print(f'{pretty_log_name}: {pseudolockfile}...', file=sys.stderr)
     while True:
-        proctitle('waiting for pseudolock...', file=sys.stderr)
+        proctitle('waiting for pseudolock...')
         if not os.path.exists(pseudolockfile):
             break
         t = os.stat(pseudolockfile).st_mtime
@@ -244,7 +244,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
             print('pseudolockfile got too old', file=sys.stderr)
             break
         time.sleep(10)
-    proctitle('pseudolocking...', file=sys.stderr)
+    proctitle('pseudolocking...')
     with open(pseudolockfile, 'w') as f:
         f.write(str(time.time()))
     proctitle('pseudolocked')
