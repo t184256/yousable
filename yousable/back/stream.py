@@ -246,7 +246,7 @@ def stream(config, feed, entry_info, entry_pathogen, profile, video=True):
         if time.time() - t > slice_seconds * 2 + 5:
             print('pseudolockfile got too old', file=sys.stderr)
             break
-        time.sleep(10)
+        time.sleep(slice_seconds // 10)
     proctitle('pseudolocking...')
     with open(pseudolockfile, 'w') as f:
         f.write(str(time.time()))
