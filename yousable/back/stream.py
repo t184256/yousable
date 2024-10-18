@@ -118,6 +118,9 @@ def intermerger(log_prefix, pseudolockfile,
                 its_over_event, audio_only=False):
     observed_duration = written_duration = 0
 
+    proctitle(f'initial sleep for {slice_duration // 10}s...')
+    time.sleep(slice_duration // 10)
+
     proctitle('waiting...')
     while not its_over_event.wait(timeout=min(20, slice_duration//32+1)):
         fds = [get_file_and_duration(dir_) for dir_ in dirs]
