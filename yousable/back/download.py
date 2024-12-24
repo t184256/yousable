@@ -136,6 +136,7 @@ def download(config, feed, entry_pathogen, profile, retries=2):
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },
+        **config['yt_dlp_options']['all'],
         **config['profiles'][profile]['download'],
     }
 

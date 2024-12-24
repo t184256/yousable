@@ -96,3 +96,6 @@ profiles:
 #    url: https://www.youtube.com/user/Kurzgesagt
 #    # cut out every segment reported to Sponsorblock
 #    sponsorblock_remove: [ all ]
+
+yt_dlp_options:
+  all: {}

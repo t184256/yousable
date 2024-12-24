@@ -84,6 +84,9 @@ def load_config():
             }),
         }),
         'feeds': confuse.MappingValues(config_template_feed),
+        'yt_dlp_options': {
+            'all': confuse.Optional(dict, default={}),
+        },
     }
 
     print('effective config:', file=sys.stderr)

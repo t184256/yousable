@@ -184,6 +184,7 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },
+        **config['yt_dlp_options']['all'],
         **live_opts,
     }
 

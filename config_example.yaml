@@ -87,3 +87,7 @@ profiles:
     live:
       audio:
         format_sort: [ 'acodec:opus' ]
+
+yt_dlp_options:
+  all:
+    source_address: '0.0.0.0'

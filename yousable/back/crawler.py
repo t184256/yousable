@@ -128,6 +128,7 @@ def crawl_feed(config, feed):
         'sleep_interval_requests':
             config['limits']['throttle_extra_seconds'],
         'retry_sleep_functions': {'http': retry, 'extractor': retry},
+        **config['yt_dlp_options']['all'],
     }
     try:
         sleep(f'{feed}: pre-crawl 0/{len(extra_urls) + 1}', config=config)
