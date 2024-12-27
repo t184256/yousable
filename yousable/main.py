@@ -31,9 +31,7 @@ def load_config():
 
     config = confuse.Configuration('yousable', __name__)
     print('configuration directory is', config.config_dir(), file=sys.stderr)
-    custom_config = os.getenv('YOUSABLE_CONFIG')
-    if custom_config:
-        print(f'YOUSABLE_CONFIG={custom_config}', file=sys.stderr)
+    if custom_config := os.getenv('YOUSABLE_CONFIG'):
         config.set_file(custom_config)
     feed_defaults = config.get({'feed_defaults': CONFIG_FEED_DEFAULTS})
     feed_defaults = feed_defaults['feed_defaults']
