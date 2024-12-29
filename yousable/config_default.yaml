@@ -97,5 +97,9 @@ profiles:
 #    # cut out every segment reported to Sponsorblock
 #    sponsorblock_remove: [ all ]
 
+fetching:
+  proxies:  # picked at random
+    - ~  # None = no proxy
+
 yt_dlp_options:
   all: {}

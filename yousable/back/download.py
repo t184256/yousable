@@ -19,7 +19,7 @@ from yt_dlp.postprocessor.modify_chapters import ModifyChaptersPP
 
 import yousable.sponsorblock
 from yousable.sponsorblock import SponsorBlockPPCached
-from yousable.utils import proctitle, sleep
+from yousable.utils import proctitle, sleep, dl_options
 
 
 def shorten(s, to=30):
@@ -136,7 +136,7 @@ def download(config, feed, entry_pathogen, profile, retries=2):
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },
-        **config['yt_dlp_options']['all'],
+        **dl_options(config, 'all'),
         **config['profiles'][profile]['download'],
     }
 

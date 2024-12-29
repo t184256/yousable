@@ -97,3 +97,12 @@ def reap():
         if p.exitcode is None:
             new_children.append(p)
     _children = new_children
+
+
+def dl_options(config, kind='all'):
+    opts = config['yt_dlp_options'][kind]
+    if 'fetching' in config and 'proxies' in config['fetching']:
+        proxy = random.choice(config['fetching']['proxies'])
+        if proxy is not None:
+            opts['proxy'] = proxy
+    return opts

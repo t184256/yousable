@@ -82,6 +82,9 @@ def load_config():
             }),
         }),
         'feeds': confuse.MappingValues(config_template_feed),
+        'fetching': confuse.Optional(confuse.MappingTemplate({
+            'proxies': confuse.Sequence(confuse.OneOf([str, None])),
+        })),
         'yt_dlp_options': {
             'all': confuse.Optional(dict, default={}),
         },

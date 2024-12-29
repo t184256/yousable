@@ -12,7 +12,7 @@ import time
 import yt_dlp
 import ffmpeg
 
-from yousable.utils import start_process, proctitle
+from yousable.utils import start_process, proctitle, dl_options
 
 
 def shorten(s, to=30):
@@ -184,7 +184,7 @@ def _stream(config, entry_info, feed, workdir, profile, video=False):
         'retry_sleep_functions': {
             'http': retry, 'extractor': retry, 'fragment': retry,
         },
-        **config['yt_dlp_options']['all'],
+        **dl_options(config, 'all'),
         **live_opts,
     }
 
