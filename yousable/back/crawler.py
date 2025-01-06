@@ -175,9 +175,6 @@ def crawl_feed(config, feed):
         except Exception as ex:
             print(f'{feed}: ERROR {ex} {extra_url}', file=sys.stderr)
 
-    os.makedirs(feed_pathogen('meta'), exist_ok=True)
-    _write_json(feed_pathogen('meta', 'feed.json'), info)
-
     now = datetime.datetime.now(datetime.timezone.utc)
     max_age = datetime.timedelta(seconds=feed_cfg['keep_entries_seconds'])
     max_age += datetime.timedelta(days=1)  # upload_date coarseness
@@ -203,6 +200,13 @@ def crawl_feed(config, feed):
         if not os.path.exists(entry_pathogen('meta', 'first_seen')):
             with open(entry_pathogen('meta', 'first_seen'), 'w'):
                 pass
+
+    os.makedirs(feed_pathogen('meta'), exist_ok=True)
+    _write_json(feed_pathogen('meta', 'feed.json'), info)
+
+    if not info['entries'] or all(e is None for e in info['entries']):
+        print(f'{feed}: EMPTY entries={info["entries"]}', file=sys.stderr)
+        return
 
     if ts_new is not None:
         with open(rss_timestamp_file, 'w') as f:
