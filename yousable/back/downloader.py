@@ -98,10 +98,12 @@ def download_feed(config, feed_name):
 
     # Download stuff
 
+    success = True
     entries = feed_info['entries']
     for i, e in enumerate(shuffled(entries)):
         if e is None:
             print(f'SKIPPING {feed_name}: null entry', file=sys.stderr)
+            success = False
             continue
 
         def entry_pathogen(d, *r):
@@ -110,6 +112,7 @@ def download_feed(config, feed_name):
         entry_json = entry_pathogen('meta', 'entry.json')
         if not os.path.exists(entry_json):
             print(f'skipping {feed_name} {e["id"]}: no metadata')
+            success = False
             continue
 
         if e.get('live_status') == 'is_upcoming':
@@ -141,9 +144,11 @@ def download_feed(config, feed_name):
                 print(f'ERROR {status}', file=sys.stderr)
                 traceback.print_exception(ex)
                 sleep('ERROR', config=config)
+                success = False
 
     # Mark feed as processed
-    os.rename(downloaded_marker_file_tmp, downloaded_marker_file)
+    if success:
+        os.rename(downloaded_marker_file_tmp, downloaded_marker_file)
 
 
 def main(config):
