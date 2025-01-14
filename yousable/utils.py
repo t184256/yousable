@@ -103,6 +103,10 @@ def dl_options(config, kind='all'):
     opts = config['yt_dlp_options'][kind]
     if 'fetching' in config and 'proxies' in config['fetching']:
         proxy = random.choice(config['fetching']['proxies'])
+        proxy_pretty = repr(proxy)
         if proxy is not None:
             opts['proxy'] = proxy
+            if '@' in proxy:
+                proxy_pretty = proxy.split('@', 1)[-1]
+        print(f'proxy roll: {proxy_pretty}', file=sys.stderr)
     return opts
