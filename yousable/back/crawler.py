@@ -143,6 +143,10 @@ def crawl_feed(config, feed):
         print(f'{feed}: ERROR {ex}', file=sys.stderr)
         sleep(f'{feed}: ERROR', config=config)
 
+    if not info['entries'] or all(e is None for e in info['entries']):
+        print(f'{feed}: EMPTY entries={info["entries"]}', file=sys.stderr)
+        return
+
     for extra_i, extra_url in enumerate(extra_urls):
         print(f'{feed} {len(info["entries"])}: '
               f'extra url check {extra_url}...', file=sys.stderr)
@@ -153,6 +157,11 @@ def crawl_feed(config, feed):
                 ydl.add_post_processor(MyStripPP(), when='pre_process')
                 ee = ydl.extract_info(extra_url, download=False)
             ee = ydl.sanitize_info(ee)
+
+            if not ee['entries'] or all(e is None for e in ee['entries']):
+                print(f'{feed}: EMPTY {extra_i} entries={ee["entries"]}',
+                      file=sys.stderr)
+                return
             ids = [x['id'] for x in info['entries']]
             if ee and 'entries' in ee:
                 for eee in ee['entries']:
@@ -203,10 +212,6 @@ def crawl_feed(config, feed):
 
     os.makedirs(feed_pathogen('meta'), exist_ok=True)
     _write_json(feed_pathogen('meta', 'feed.json'), info)
-
-    if not info['entries'] or all(e is None for e in info['entries']):
-        print(f'{feed}: EMPTY entries={info["entries"]}', file=sys.stderr)
-        return
 
     if ts_new is not None:
         with open(rss_timestamp_file, 'w') as f:
