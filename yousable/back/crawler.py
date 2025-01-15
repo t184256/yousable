@@ -143,7 +143,11 @@ def crawl_feed(config, feed):
         print(f'{feed}: ERROR {ex}', file=sys.stderr)
         sleep(f'{feed}: ERROR', config=config)
 
-    if not info['entries'] or all(e is None for e in info['entries']):
+    if (
+        info is None or
+        not info['entries'] or
+        all(e is None for e in info['entries'])
+    ):
         print(f'{feed}: EMPTY entries={info["entries"]}', file=sys.stderr)
         return
 
@@ -158,7 +162,11 @@ def crawl_feed(config, feed):
                 ee = ydl.extract_info(extra_url, download=False)
             ee = ydl.sanitize_info(ee)
 
-            if not ee['entries'] or all(e is None for e in ee['entries']):
+            if (
+                ee is None or
+                not ee['entries'] or
+                all(e is None for e in ee['entries'])
+            ):
                 print(f'{feed}: EMPTY {extra_i} entries={ee["entries"]}',
                       file=sys.stderr)
                 return
