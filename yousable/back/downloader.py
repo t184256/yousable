@@ -119,6 +119,17 @@ def download_feed(config, feed_name):
             print(f'skipping {feed_name} {e["id"]}: is upcoming')
             continue
 
+        # TODO: more flexible filtering
+        if e['id'].startswith('UC') or e['id'].startswith('UU'):
+            print(f'skipping {feed_name} {e["id"]}: id prefix', file=sys.stderr)
+            continue
+
+        # TODO: more flexible filtering
+        reported_duration = e.get('duration')
+        if reported_duration and reported_duration < 160:
+            print(f'skipping {feed_name} {e["id"]}: < 160s', file=sys.stderr)
+            continue
+
         for profile in config['profiles']:
             if profile not in feed_cfg['profiles']:
                 continue
