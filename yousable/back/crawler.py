@@ -55,7 +55,7 @@ def feed_overduedness(config, feed, now):
     return float('inf')
 
 
-def most_overdue_feeds(config, top=5):
+def most_overdue_feeds(config, top=2):
     t = time.time()
     d = {feed: feed_overduedness(config, feed, t) for feed in config['feeds']}
     d = {feed: overduedness for feed, overduedness in d.items()
@@ -235,7 +235,7 @@ def crawl_feed(config, feed):
 def main(config):
     proctitle('spinning up...')
     while True:
-        most_overdue = list(most_overdue_feeds(config, top=5).keys())
+        most_overdue = list(most_overdue_feeds(config, top=2).keys())
         if most_overdue:
             picked_feed = random.choice(most_overdue)
             crawl_feed(config, picked_feed)
