@@ -94,3 +94,4 @@ fetching:
 yt_dlp_options:
   all:
     source_address: '0.0.0.0'
+    ratelimit: 800000
