@@ -29,6 +29,8 @@
           pname = "yousable";
           version = "0.0.1";
           src = ./.;
+          pyproject = true;
+          build-system = [ python3Packages.setuptools ];
           propagatedBuildInputs = (pyDeps python3Packages) ++ (nativeDeps pkgs);
           doCheck = false;
         };
