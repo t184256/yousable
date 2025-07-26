@@ -11,7 +11,7 @@ import ffmpeg
 import yt_dlp
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
 from yt_dlp.postprocessor.ffmpeg import (
-    FFmpegEmbedSubtitlePP,
+    #FFmpegEmbedSubtitlePP,
     FFmpegExtractAudioPP,
     FFmpegVideoRemuxerPP,
 )
@@ -122,8 +122,8 @@ def download(config, feed, entry_pathogen, profile, retries=2):
         'outtmpl': 'media',
         'merge_output_format': container,
         'writethumbnail': True,
-        'writesubtitles': True,
-        'subtitleslangs': ['all', '-live_chat'],
+        #'writesubtitles': True,
+        #'subtitleslangs': ['all', '-live_chat'],
         'paths': {
             'temp': entry_pathogen('tmp', profile),
             'home': entry_pathogen('tmp', profile),
@@ -148,7 +148,7 @@ def download(config, feed, entry_pathogen, profile, retries=2):
             if sb and sb_cats:
                 _add_postprocessor(ydl, FFmpegVideoRemuxerPP,
                                    preferedformat=container)
-                _add_postprocessor(ydl, FFmpegEmbedSubtitlePP)
+                #_add_postprocessor(ydl, FFmpegEmbedSubtitlePP)
                 _add_postprocessor(ydl, SponsorBlockPPCached,
                                    categories=sb_cats,
                                    cachefile=sb_global_path)
