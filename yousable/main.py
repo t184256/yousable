@@ -35,7 +35,7 @@ def load_config():
         config.set_file(custom_config)
     feed_defaults = config.get({'feed_defaults': CONFIG_FEED_DEFAULTS})
     feed_defaults = feed_defaults['feed_defaults']
-    profile_names = confuse.Choice(config.get()['profiles'].keys())
+    profile_names = confuse.Choice(list(config.get()['profiles'].keys()))
 
     config_template_feed = {
         'url': str,
