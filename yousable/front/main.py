@@ -11,6 +11,7 @@ import urllib
 import flask
 from flask_httpauth import HTTPBasicAuth
 import werkzeug.security
+import werkzeug.http
 
 import yousable
 
@@ -80,8 +81,14 @@ def create_app(config=None):
                    else 'default')
         if profile not in app.config['profiles']:
             return f'`profile `{profile}` not specified in configuration', 500
-        return yousable.front.feed.feed(app.config, profile, feed_name,
-                                        extra_opts, url_maker)
+        body = yousable.front.feed.feed(app.config, profile, feed_name,
+                                         extra_opts, url_maker)
+        if isinstance(body, str):
+            body = body.encode('utf-8')
+        resp = flask.make_response(body, 200)
+        resp.headers['ETag'] = f'"{werkzeug.http.generate_etag(body)}"'
+        resp.headers['Cache-Control'] = 'no-cache'
+        return resp.make_conditional(flask.request)  # If-Name-Match hit -> 304
 
     @app.route('/download/<feed_name>/<entry_id_profile_container>')
     @login_required
