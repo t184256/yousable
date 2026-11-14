@@ -151,4 +151,6 @@ def feed(config, profile, feed_name, extra_opts, url_maker):
         generate_entry(config, profile, feed_name, url_maker, fg, e['id'],
                        lambda d, *r: feed_pathogen(d, e['id'], *r))
 
+    fg._FeedGenerator__rss_lastBuildDate = None  # make ETag value stable
+
     return fg.rss_str(pretty=True)
